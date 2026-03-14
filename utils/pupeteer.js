@@ -1,0 +1,1 @@
+export const containsText = (input) => `::-p-xpath(//*[contains(., "${input}")])`;

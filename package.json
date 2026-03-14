@@ -1,0 +1,32 @@
+{
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.5.0",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "apify-client": "^2.22.2",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "pg": "^8.20.0",
+    "pg-hstore": "^2.3.4",
+    "puppeteer": "^24.38.0",
+    "sequelize": "^6.37.8"
+  },
+  "type": "module",
+  "name": "jobber",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "dev": "tsx watch server.ts",
+    "build": "tsc",
+    "start": " server.ts",
+    "lint": "tsc --noEmit"
+  },
+  "author": "Emmanuel Acquah",
+  "license": "ISC",
+  "keywords": []
+}
