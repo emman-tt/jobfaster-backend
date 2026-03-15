@@ -1,15 +1,16 @@
 import { Response } from "express";
 
-export async function sendError(
+export function sendSuccess<T>(
   res: Response,
+  statusCode: 200 = 200,
+  status: "success" = "success",
   message: string,
-  statusCode: number,
-  status: string,
+  data?: T,
 ) {
-  console.log('reached')
   return res.status(statusCode).json({
     status: status,
     message: message,
+    data: data ?? null,
     timestamp: new Date().toISOString(),
   });
 }
