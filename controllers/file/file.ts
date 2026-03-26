@@ -14,7 +14,7 @@ export async function uploadResume(
   try {
     const resume = req.file as any;
     if (!resume) {
-      sendError(res, "No file provided", 404, "error");
+      return sendError(res, "No file provided", 404, "error");
     }
     const cloudinaryUrl = resume.path;
     const response = await axios.get(cloudinaryUrl, {
@@ -25,9 +25,8 @@ export async function uploadResume(
     const result = await parser.parse(buffer);
 
     const aiResponse = await talktoAi(result.text);
-    console.log(aiResponse);
 
-    sendSuccess(
+    return sendSuccess(
       res,
       undefined,
       undefined,

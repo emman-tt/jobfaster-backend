@@ -1,7 +1,8 @@
 import express from "express";
 const router = express.Router();
-import { upload } from "../../config/diskStorage";
-router.post("/resume", upload.single('file'));
+import { tailorResume } from "../../controllers/file/tailorResume";
 
+router.post("/tailor/resume", tailorResume);
 
-export const aiRouter = router
+export const aiRouter = router;
+//api/v1/ai/tailor/resume
