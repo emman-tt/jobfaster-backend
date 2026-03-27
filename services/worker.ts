@@ -2,6 +2,7 @@ import { Redis } from "ioredis";
 import dotenv from "dotenv";
 import { Queue, Worker } from "bullmq";
 import { talktoAi } from "../controllers/ai/ai";
+
 dotenv.config();
 
 const { REDIS_URL } = process.env;
@@ -12,6 +13,8 @@ if (!REDIS_URL) {
 
 const connection = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
+  tls: {},
+  connectTimeout: 10000,
 });
 
 interface ProcessorResponse {
@@ -19,31 +22,38 @@ interface ProcessorResponse {
   response: string;
   timestamp: string;
   jobId: string;
+  fileId: string;
+}
+
+interface inputObject {
+  data: any;
+  jobId: string;
 }
 async function delay(seconds: number) {
   await new Promise((resolve) => setTimeout(resolve, seconds));
 }
 
 export async function Processor(job: any): Promise<ProcessorResponse> {
-  const { data, jobId } = job;
-
+  const { data, fileId } = job;
+ 
   try {
-    const response = await talktoAi(data);
-
-    console.log(response);
+    const response = await talktoAi(data.data);
+    // console.log(response);
     return {
       status: true,
-      jobId,
+      jobId: job.token || 0,
       response: response,
+      fileId: data.data.fileId,
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
     console.log(error);
     return {
       status: false,
+      fileId: fileId,
       response: "Failed to process the cv",
       timestamp: new Date().toISOString(),
-      jobId,
+      jobId: job.token || 0,
     };
   }
 }
@@ -58,18 +68,4 @@ export const aiQueue = new Queue("ai", {
     },
   },
 });
-const aiWorker = new Worker("ai", Processor, { connection });
-
-aiWorker.on("completed", (job, result) => {
-  console.log(`AI JOB ${job?.id} COMPLETED!`);
-  console.log(`   Result:`, result);
-});
-
-aiWorker.on("failed", (job, error) => {
-  console.log(`AI JOB ${job?.id} FAILED!`);
-  console.log(`   Error:`, error.message);
-});
-
-aiWorker.on("active", (job) => {
-  console.log(`AI JOB ${job?.id} STARTED `);
-});
+export const aiWorker = new Worker("ai", Processor, { connection });

@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { aiQueue } from "../../models/worker";
+import { aiQueue } from "../../services/worker";
 import { sendSuccess } from "../../utils/sendSuccess";
 
 export async function tailorResume(
