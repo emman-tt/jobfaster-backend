@@ -1,88 +1,88 @@
 {
-    "type": "tailor",
-    "data": {
-        "jobDescription": "jobTitle: Senior Frontend Developer,company: TechCorp Solutions,location: San Francisco, CA (Remote), email: hiring@techcorp.com, description: We are looking for a Senior Frontend Developer to join our product team. You will be responsible for building responsive web applications using React, TypeScript, and modern CSS frameworks.Requirements:5+ years of experience with React and modern JavaScript,Strong understanding of responsive design and cross-browser compatibility,Experience with state management (Redux, Zustand, or Context API),Familiarity with REST APIs and GraphQL,Experience with performance optimization and web vitals Excellent communication and collaboration skills.Nice to have:Experience with Next.js,Knowledge of Node.js,Open source contributions",
-        "name": "Michael Chen",
-        "email": "michael.chen@email.com",
-        "phone": "(415) 555-8923",
-        "location": "San Francisco, CA",
-        "jobTitle": "Senior Frontend Developer",
-        "education": [
-            {
-                "id": 1,
-                "level": "Bachelor's",
-                "instituition": "University of Washington",
-                "degree": "B.S. Computer Science",
-                "startYear": "2012",
-                "endYear": "2016",
-                "gpa": "3.7"
-            }
-        ],
-        "skills": [
-            "React",
-            "TypeScript",
-            "Next.js",
-            "Tailwind CSS",
-            "Redux Toolkit",
-            "GraphQL",
-            "Jest",
-            "React Testing Library",
-            "Webpack",
-            "Git/GitHub",
-            "Figma"
-        ],
-        "summary": "Frontend Engineer with 8+ years of experience building high-performance, scalable web applications. Specializes in React, TypeScript, and modern frontend architecture. Passionate about creating intuitive user experiences and mentoring junior developers.",
-        "showSummary": true,
-        "experience": [
-            {
-                "id": 1,
-                "jobTitle": "Senior Frontend Developer",
-                "company": "Stripe",
-                "startMonth": "March",
-                "startYear": "2022",
-                "endMonth": "Present",
-                "endYear": 2026,
-                "location": "San Francisco, CA",
-                "points": [
-                    "Led migration of legacy dashboard from JavaScript to TypeScript, reducing runtime errors by 65% and improving developer experience",
-                    "Built reusable component library used across 8 product teams, cutting development time by 40%",
-                    "Optimized bundle size by 35% through code splitting and lazy loading, improving Core Web Vitals from 78 to 94",
-                    "Mentored 4 junior developers, 3 promoted to mid-level roles within 12 months"
-                ]
-            },
-            {
-                "id": 2,
-                "jobTitle": "Frontend Developer",
-                "company": "Shopify",
-                "startMonth": "July",
-                "startYear": "2019",
-                "endMonth": "February",
-                "endYear": "2022",
-                "location": "Toronto, Canada",
-                "points": [
-                    "Developed and maintained merchant dashboard serving 500,000+ monthly active users",
-                    "Implemented real-time data visualization features using React and D3, increasing user engagement by 28%",
-                    "Reduced page load time by 50% through image optimization and code splitting",
-                    "Collaborated with UX team to implement design system, ensuring consistent experience across 20+ features"
-                ]
-            },
-            {
-                "id": 3,
-                "jobTitle": "Junior Frontend Developer",
-                "company": "Hootsuite",
-                "startMonth": "August",
-                "startYear": "2016",
-                "endMonth": "June",
-                "endYear": "2019",
-                "location": "Vancouver, Canada",
-                "points": [
-                    "Built responsive components for social media management platform used by 10,000+ businesses",
-                    "Implemented automated testing with Jest and React Testing Library, achieving 85% code coverage",
-                    "Fixed 200+ accessibility issues, improving WCAG 2.1 AA compliance from 65% to 95%",
-                    "Participated in code reviews and contributed to technical documentation"
-                ]
-            }
-        ],
-        "fileId": 501
+  "status": true,
+  "jobId": "21a09b6f-48e9-47c0-8674-cad623eaa5a7:3",
+  "response": {
+    "resume": {
+      "name": "Sarah Johnson",
+      "jobTitle": "Senior Product Manager",
+      "location": "San Francisco, CA",
+      "summary": "Senior Product professional with 8+ years of experience specializing in user-centric design and cross-functional leadership. Expert in leveraging user research and A/B testing to deliver high-impact digital experiences that drive engagement and 4.8/5 app store ratings. Proven track record of scaling SaaS platforms and mobile applications through data-driven design decisions.",
+      "education": [
+        {
+          "institution": "undefined",
+          "degree": "MBA, Product Management",
+          "startYear": "2016",
+          "endYear": "2018",
+          "gpa": "3.9"
+        },
+        {
+          "institution": "undefined",
+          "degree": "B.S. Business Administration",
+          "startYear": "2010",
+          "endYear": "2014",
+          "gpa": "3.8"
+        }
+      ],
+      "skills": [
+        "User Research",
+        "A/B Testing",
+        "Agile Methodology",
+        "Product Strategy",
+        "Product Launch",
+        "Roadmap Planning",
+        "Cross-functional Leadership",
+        "Data Analytics"
+      ],
+      "experience": [
+        {
+          "company": "TechCorp Inc.",
+          "jobTitle": "Senior Product Manager",
+          "startYear": "2022",
+          "endYear": "Present",
+          "location": "San Francisco, CA",
+          "points": [
+            "Led product strategy for a flagship enterprise SaaS platform, driving 45% YoY revenue growth through user-centric feature development.",
+            "Launched 3 major features that increased user engagement by 35% and reduced churn by 18% by prioritizing intuitive interface design.",
+            "Managed a cross-functional team of 12 engineers and 3 designers to deliver high-quality products through the full development lifecycle.",
+            "Established a metrics framework adopted across 4 teams that improved decision-making velocity by 40% using real-time user data."
+          ]
+        },
+        {
+          "company": "InnovateLabs",
+          "jobTitle": "Product Manager",
+          "startYear": "2018",
+          "endYear": "2021",
+          "location": "Seattle, WA",
+          "points": [
+            "Owned mobile app product lines with 2M+ monthly active users, achieving a 4.8/5 app store rating through meticulous attention to UX.",
+            "Prioritized and shipped 15+ features based on rigorous user research, resulting in a 28% increase in user retention.",
+            "Collaborated with engineering to reduce app load time by 50%, directly improving user satisfaction scores by 32%.",
+            "Mentored 3 junior PMs on design-thinking principles and product execution, leading to 2 promotions to mid-level roles."
+          ]
+        },
+        {
+          "company": "StartupHub",
+          "jobTitle": "Associate Product Manager",
+          "startYear": "2016",
+          "endYear": "2018",
+          "location": "Austin, TX",
+          "points": [
+            "Assisted in launching a mobile MVP that acquired 50,000 users in the first 3 months by identifying and solving core user pain points.",
+            "Conducted 100+ customer interviews to validate product-market fit and inform initial user interface design strategy.",
+            "Created comprehensive product documentation and user guides that streamlined the onboarding process for the sales team and customers."
+          ]
+        }
+      ]
+    },
+    "email": {
+      "subjectLine": "Application for UI/UX Designer - Sarah Johnson",
+      "greeting": "Hi Kwame Asante,",
+      "body": "I am applying for the UI/UX Designer position at Hubtel, following a referral to the role. During my tenure at InnovateLabs, I maintained a 4.8/5 app store rating for a mobile platform with 2M+ users by prioritizing user research and satisfaction metrics. My experience conducting over 100 customer interviews and collaborating with design teams to drive a 32% increase in satisfaction scores ensures I can deliver data-driven design solutions for Hubtel.",
+      "callToAction": "I look forward to discussing how my background in user-centric strategy can contribute to your design team.",
+      "signOff": "Best regards,",
+      "attachmentNote": "Please find my CV attached."
     }
+  },
+  "fileId": 502,
+  "timestamp": "2026-03-28T00:41:59.733Z"
 }

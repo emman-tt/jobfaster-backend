@@ -24,14 +24,7 @@ interface ProcessorResponse {
   jobId: string;
   fileId: string;
   rawData?: any;
-}
-
-interface inputObject {
-  data: any;
-  jobId: string;
-}
-async function delay(seconds: number) {
-  await new Promise((resolve) => setTimeout(resolve, seconds));
+  message: string;
 }
 
 export async function Processor(job: any): Promise<ProcessorResponse> {
@@ -40,22 +33,34 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
   try {
     const response = await talktoAi(data.data);
 
-    const use = parseResponse(response);
+    if (response.statusCode !== 200) {
+      return {
+        status: false,
+        jobId: job.token || 0,
+        response: response.response || "",
+        fileId: data.data.fileId || 0,
+        timestamp: new Date().toISOString(),
+        message: response.message,
+      };
+    }
+
+    const use = parseResponse(response.response);
     return {
       status: true,
       jobId: job.token || 0,
       response: use.data,
       fileId: data.data.fileId,
       timestamp: new Date().toISOString(),
+      message: response.message,
     };
   } catch (error) {
-    console.log(error);
     return {
       status: false,
       fileId: fileId,
       response: "Failed to process the cv",
       timestamp: new Date().toISOString(),
       jobId: job.token || 0,
+      message: " Message queuing  error",
     };
   }
 }

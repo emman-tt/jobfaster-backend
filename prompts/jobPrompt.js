@@ -91,13 +91,17 @@ ${
 ## THINGS TO NEVER DO
 - Do not invent metrics not inferable from the original bullets
 - Do not write more than 150 words in the email body
+- Sign-off must be ONLY "Best regards," or "Best," — do NOT include the applicant name in signOff, it will be added in code
 - Do not use phrases like "I am passionate", "I am a hard worker", "To whom it may concern"
 - Do not use the hiring manager name if unknown — use "Hi [Company Name] Team,"
 - Do not add or remove skills from the resume
+- Do NOT use newline characters inside any string value
+- Each key must appear EXACTLY once in the response
 
 ## OUTPUT FORMAT
-Return ONE raw JSON object only. No markdown, no backticks, no explanation. 
+Return ONE raw JSON object only. No markdown, no backticks, no explanation.
 Must be directly parseable by JSON.parse(). Start with { and end with }.
+Do NOT include fullEmail — it will be assembled in code.
 
 {
   "resume": {
@@ -119,8 +123,7 @@ Must be directly parseable by JSON.parse(). Start with { and end with }.
     "body": "",
     "callToAction": "",
     "signOff": "",
-    "attachmentNote": "",
-    "fullEmail": ""
+    "attachmentNote": ""
   }
 }
 `.trim()

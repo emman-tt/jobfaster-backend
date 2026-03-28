@@ -15,7 +15,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@google/genai": "^1.45.0",
+    "@google/genai": "^1.47.0",
     "@upstash/redis": "^1.37.0",
     "apify-client": "^2.22.2",
     "bcrypt": "^6.0.0",

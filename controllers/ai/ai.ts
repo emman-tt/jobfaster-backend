@@ -4,26 +4,38 @@ import { applyJobPrompt } from "../../prompts/jobPrompt";
 
 const ai = new GoogleGenAI({});
 
-export async function talktoAi(resumeData: string): Promise<string> {
+interface Response {
+  response: string;
+  statusCode: number;
+  message: string;
+}
+
+export async function talktoAi(resumeData: string): Promise<Response> {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: applyJobPrompt(resumeData),
     });
 
-    if (response?.text) {
-      console.log(response.text);
-      return response.text;
+    if (!response.text) {
+      return {
+        response: "",
+        statusCode: 404,
+        message: "Resource not found",
+      };
     }
 
-    console.error(
-      "Gemini response structure:",
-      JSON.stringify(response, null, 2),
-    );
-    return "No response was generated";
-  } catch (error) {
+    return {
+      response: response.text,
+      statusCode: 200,
+      message: "Ai responded succesfully",
+    };
+  } catch (error: any) {
     console.error("Gemini API error:", error);
-    throw error;
+    return {
+      response: "",
+      statusCode: error.code,
+      message: error.message,
+    };
   }
 }
-
