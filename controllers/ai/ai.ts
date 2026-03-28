@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { generateTailoringPrompt } from "../../prompts/tailorResume";
+import { applyJobPrompt } from "../../prompts/jobPrompt";
 
 const ai = new GoogleGenAI({});
 
@@ -7,17 +8,12 @@ export async function talktoAi(resumeData: string): Promise<string> {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: generateTailoringPrompt(resumeData),
+      contents: applyJobPrompt(resumeData),
     });
 
-    // Check if response has text
     if (response?.text) {
+      console.log(response.text);
       return response.text;
-    }
-
-    // Check if response has candidates
-    if (response?.candidates?.[0]?.content?.parts?.[0]?.text) {
-      return response.candidates[0].content.parts[0].text;
     }
 
     console.error(
@@ -27,6 +23,7 @@ export async function talktoAi(resumeData: string): Promise<string> {
     return "No response was generated";
   } catch (error) {
     console.error("Gemini API error:", error);
-    throw error; // Let BullMQ handle retry
+    throw error;
   }
 }
+

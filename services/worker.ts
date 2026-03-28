@@ -23,6 +23,7 @@ interface ProcessorResponse {
   timestamp: string;
   jobId: string;
   fileId: string;
+  rawData?: any;
 }
 
 interface inputObject {
@@ -35,14 +36,15 @@ async function delay(seconds: number) {
 
 export async function Processor(job: any): Promise<ProcessorResponse> {
   const { data, fileId } = job;
- 
+
   try {
     const response = await talktoAi(data.data);
-    // console.log(response);
+
+    const use = parseResponse(response);
     return {
       status: true,
       jobId: job.token || 0,
-      response: response,
+      response: use.data,
       fileId: data.data.fileId,
       timestamp: new Date().toISOString(),
     };
@@ -68,4 +70,37 @@ export const aiQueue = new Queue("ai", {
     },
   },
 });
+
 export const aiWorker = new Worker("ai", Processor, { connection });
+
+interface ParsedData {
+  success: boolean;
+  data: any;
+  raw: string;
+}
+
+const parseResponse = (rawResponse: any): ParsedData => {
+  try {
+    const cleaned = rawResponse
+      .trim()
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+
+    const parsed = JSON.parse(cleaned);
+
+    if (!parsed.resume || !parsed.email) {
+      return {
+        success: false,
+        data: "invalid response generated",
+        raw: rawResponse,
+      };
+    }
+
+    return { success: true, data: parsed, raw: rawResponse };
+  } catch (err) {
+    console.log(err);
+    return { success: false, data: "parsing error occured", raw: rawResponse };
+  }
+};

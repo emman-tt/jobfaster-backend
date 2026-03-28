@@ -35,7 +35,6 @@ socket.on("connection", (ws) => {
     const input = dataInput.toString();
     const parsed = JSON.parse(input);
 
-    console.log(input);
 
     const { type, data } = parsed;
 
