@@ -18,7 +18,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
       return sendError(res, "Unauthorized: No token provided", 401, "error");
     }
     if (!process.env.ACCESS_SECRET) {
-      throw new Error("Access token dont exist / wasnt provided");
+      throw new Error("Access secret dont exist / wasnt provided");
     }
 
     jwt.verify(accessToken, process.env.ACCESS_SECRET, (err, decoded) => {

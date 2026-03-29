@@ -41,7 +41,7 @@ ${
 ${
   education.length > 0
     ? education.map(edu => `
-- ${edu.degree} | ${edu.institution} (${edu.startYear ?? ''} - ${edu.endYear ?? ''})${edu.gpa ? ` | GPA: ${edu.gpa}` : ''}
+- ${edu.degree} | ${edu.instituition} (${edu.startYear ?? ''} - ${edu.endYear ?? ''})${edu.gpa ? ` | GPA: ${edu.gpa}` : ''}
 `).join('\n')
     : 'No education provided.'
 }
@@ -110,7 +110,7 @@ Do NOT include fullEmail — it will be assembled in code.
     "location": "",
     "summary": "",
     "education": [
-      { "institution": "", "degree": "", "startYear": "", "endYear": "", "gpa": "" }
+      { "instituition": "", "degree": "", "startYear": "", "endYear": "", "gpa": "" }
     ],
     "skills": [],
     "experience": [

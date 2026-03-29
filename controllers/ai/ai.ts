@@ -13,7 +13,7 @@ interface Response {
 export async function talktoAi(resumeData: string): Promise<Response> {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemma-3-27b",
       contents: applyJobPrompt(resumeData),
     });
 

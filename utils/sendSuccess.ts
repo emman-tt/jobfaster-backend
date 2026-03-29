@@ -7,7 +7,7 @@ export function sendSuccess<T>(
   message: string,
   data?: T,
 ) {
-  return res.status(statusCode).json({
+   res.status(statusCode).json({
     status: status,
     message: message,
     data: data ?? null,
