@@ -11,10 +11,77 @@ if (!REDIS_URL) {
   throw new Error("Redis url env wasn't injected");
 }
 
+let errorCount = 0;
+let redisConnected = false;
+let aiQueue: Queue | null = null;
+let aiWorker: Worker | null = null;
+
 const connection = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
+  retryDelayOnFailover: 300000, // 5 minutes
   tls: {},
   connectTimeout: 10000,
+  enableOfflineQueue: false,
+  lazyConnect: true,
+  maxReconnectSteps: 2,
+  retryStrategy: (times) => {
+    if (redisConnected === false && times > 3) {
+      console.log("Max retries reached, stopping reconnection attempts");
+      return null;
+    }
+    return Math.min(times * 100, 3000);
+  },
+  reconnectOnError: (err: any) => {
+    if (err.code === "ENOTFOUND") {
+      console.log("DNS error detected, skip reconnection");
+      return false;
+    }
+    return Number(err.message.split(" ")[0]) !== 1;
+  },
+});
+
+connection.on("error", (err) => {
+  errorCount++;
+  console.error("Redis connection error:", err);
+  if (errorCount > 5 && redisConnected) {
+    console.log("Disconnecting Redis due to too many errors");
+    connection.disconnect();
+    redisConnected = false;
+    if (aiWorker) {
+      aiWorker.close().catch(console.error);
+      aiWorker = null;
+    }
+    if (aiQueue) {
+      aiQueue.close().catch(console.error);
+      aiQueue = null;
+    }
+  }
+});
+
+connection.on("connect", async () => {
+  errorCount = 0; // Reset on successful connect
+  redisConnected = true;
+  console.log("Connected to Redis, initializing worker and queue");
+
+  if (!aiQueue) {
+    aiQueue = new Queue("ai", {
+      connection,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 3000,
+        },
+      },
+    });
+  }
+
+  if (!aiWorker) {
+    aiWorker = new Worker("ai", Processor, {
+      connection,
+      removeOnFail: undefined,
+    });
+  }
 });
 
 interface ProcessorResponse {
@@ -29,6 +96,17 @@ interface ProcessorResponse {
 
 export async function Processor(job: any): Promise<ProcessorResponse> {
   const { data, fileId } = job;
+
+  if (connection.status !== "ready") {
+    return {
+      status: false,
+      response: "Redis not connected",
+      timestamp: new Date().toISOString(),
+      jobId: job.token || 0,
+      fileId: fileId,
+      message: "Connection error",
+    };
+  }
 
   try {
     const response = await talktoAi(data.data);
@@ -54,6 +132,7 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
       message: response.message,
     };
   } catch (error) {
+    console.log("error", error);
     return {
       status: false,
       fileId: fileId,
@@ -65,18 +144,27 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
   }
 }
 
-export const aiQueue = new Queue("ai", {
-  connection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: "exponential",
-      delay: 2000,
-    },
-  },
-});
+export const getAiQueue = () => aiQueue;
+export const getAiWorker = () => aiWorker;
 
-export const aiWorker = new Worker("ai", Processor, { connection });
+// Helper function to wait for worker to be ready
+export const onWorkerReady = (
+  callback: (queue: Queue, worker: Worker) => void,
+): (() => void) => {
+  if (aiQueue && aiWorker) {
+    callback(aiQueue, aiWorker);
+  }
+
+  const checkInterval = setInterval(() => {
+    if (aiQueue && aiWorker) {
+      clearInterval(checkInterval);
+      callback(aiQueue, aiWorker);
+    }
+  }, 100);
+
+  // Return cleanup function
+  return () => clearInterval(checkInterval);
+};
 
 interface ParsedData {
   success: boolean;

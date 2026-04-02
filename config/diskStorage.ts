@@ -5,21 +5,21 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// cloudinary.config({
+//   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+//   api_key: process.env.CLOUDINARY_API_KEY,
+//   api_secret: process.env.CLOUDINARY_API_SECRET,
+// });
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (file: any) => {
-    return {
-      folder: "Jobfaster",
-      format: "pdf",
-      public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
-    };
-  },
-});
+// const storage = new CloudinaryStorage({
+//   cloudinary: cloudinary,
+//   params: async (file: any) => {
+//     return {
+//       folder: "Jobfaster",
+//       format: "pdf",
+//       public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
+//     };
+//   },
+// });
 
-export const upload = multer({ storage: storage });
+export const upload = multer();

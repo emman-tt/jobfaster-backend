@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { aiQueue } from "../../services/worker";
+import { getAiQueue } from "../../services/worker";
 import { sendSuccess } from "../../utils/sendSuccess";
 
 export async function tailorResume(
@@ -8,6 +8,14 @@ export async function tailorResume(
   next: NextFunction,
 ) {
   try {
+    const aiQueue = getAiQueue();
+    if (!aiQueue) {
+      return res.status(503).json({
+        success: false,
+        message: "Redis service is unavailable, please try again later",
+      });
+    }
+
     const { resumeData } = req.body;
     const idempoKey = crypto.randomUUID().split("-")[0];
 

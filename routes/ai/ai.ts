@@ -5,4 +5,3 @@ import { tailorResume } from "../../controllers/file/tailorResume";
 router.post("/tailor/resume", tailorResume);
 
 export const aiRouter = router;
-//api/v1/ai/tailor/resume

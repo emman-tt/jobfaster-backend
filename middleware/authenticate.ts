@@ -15,18 +15,18 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers["authorization"];
     const accessToken = authHeader && authHeader.split(" ")[1];
     if (!accessToken) {
-      return sendError(res, "Unauthorized: No token provided", 401, "error");
+      return sendError(res, "Unauthorized: No token provided", 401, undefined);
     }
     if (!process.env.ACCESS_SECRET) {
       throw new Error("Access secret dont exist / wasnt provided");
     }
 
     jwt.verify(accessToken, process.env.ACCESS_SECRET, (err, decoded) => {
-      if (err) {
-        return sendError(res, "Invalid or expired token", 403, "error");
+      if (err?.name === 'TokenExpiredError') {
+        return sendError(res, "ACCESS_TOKEN_EXPIRED", 401, 'failed');
       }
 
-      req.user = decoded as userPayload;
+      req.user = decoded 
       next();
     });
   } catch (error) {

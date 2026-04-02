@@ -2,7 +2,7 @@ import { Response } from "express";
 
 export function sendSuccess<T>(
   res: Response,
-  statusCode: 200 = 200,
+  statusCode: number = 200,
   status: "success" = "success",
   message: string,
   data?: T,

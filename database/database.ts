@@ -4,6 +4,7 @@ import { File } from "../models/file.js";
 import { Folder } from "../models/folder.js";
 import { Pointer } from "../models/pointer.js";
 import dotenv from "dotenv";
+import { Token } from "../models/token.js";
 dotenv.config();
 
 export async function db() {
@@ -16,7 +17,7 @@ export async function db() {
   });
 
   Pointer.hasOne(File, {
-    foreignKey: "id", // The File's 'id' is the link
+    foreignKey: "id",
     sourceKey: "id",
   });
   File.belongsTo(Pointer, {
@@ -24,6 +25,13 @@ export async function db() {
     targetKey: "id",
   });
 
+  User.hasMany(Token, {
+    foreignKey: "userId",
+    onDelete: "CASCADE",
+  });
+  Token.belongsTo(User, {
+    foreignKey: "userId",
+  });
   Pointer.hasOne(Folder, {
     foreignKey: "id",
     sourceKey: "id",
