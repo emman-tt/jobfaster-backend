@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { generateTailoringPrompt } from "../../prompts/tailorResume";
 import { applyJobPrompt } from "../../prompts/jobPrompt";
+import { uploadResumePrompt } from "../../prompts/extractPrompt";
 
 const ai = new GoogleGenAI({});
 
@@ -10,11 +11,17 @@ interface Response {
   message: string;
 }
 
-export async function talktoAi(resumeData: string): Promise<Response> {
+export async function talktoAi(
+  resumeData: string,
+  type: "JOB_APPLY" | "RESUME_UPLOAD",
+): Promise<Response> {
   try {
     const response = await ai.models.generateContent({
       model: "gemma-3-27b",
-      contents: applyJobPrompt(resumeData),
+      contents:
+        type === "JOB_APPLY"
+          ? applyJobPrompt(resumeData)
+          : uploadResumePrompt(resumeData),
     });
 
     if (!response.text) {

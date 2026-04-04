@@ -18,7 +18,7 @@ let aiWorker: Worker | null = null;
 
 const connection = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
-  retryDelayOnFailover: 300000, // 5 minutes
+  retryDelayOnFailover: 300000,
   tls: {},
   connectTimeout: 10000,
   enableOfflineQueue: false,
@@ -91,15 +91,18 @@ interface ProcessorResponse {
   jobId: string;
   fileId: string;
   rawData?: any;
+  type: "JOB_APPLY" | "RESUME_UPLOAD";
   message: string;
 }
 
 export async function Processor(job: any): Promise<ProcessorResponse> {
-  const { data, fileId } = job;
+  const { data, type } = job;
+  const { fileId } = data;
 
   if (connection.status !== "ready") {
     return {
       status: false,
+      type: type,
       response: "Redis not connected",
       timestamp: new Date().toISOString(),
       jobId: job.token || 0,
@@ -109,11 +112,12 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
   }
 
   try {
-    const response = await talktoAi(data.data);
+    const response = await talktoAi(data.data, type);
 
     if (response.statusCode !== 200) {
       return {
         status: false,
+        type: type,
         jobId: job.token || 0,
         response: response.response || "",
         fileId: data.data.fileId || 0,
@@ -122,12 +126,20 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
       };
     }
 
-    const use = parseResponse(response.response);
+    if (type === "JOB_APPLY") {
+      return handleJobApply(response.response, "JOB_APPLY", job, data);
+    }
+
+    if (type === "RESUME_UPLOAD") {
+      return handleResumeUpload(response.response, "RESUME_UPLOAD", job, data);
+    }
+
     return {
-      status: true,
+      status: false,
+      type: type,
       jobId: job.token || 0,
-      response: use.data,
-      fileId: data.data.fileId,
+      response: response.response || "",
+      fileId: data.data.fileId || 0,
       timestamp: new Date().toISOString(),
       message: response.message,
     };
@@ -136,6 +148,7 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
     return {
       status: false,
       fileId: fileId,
+      type: type,
       response: "Failed to process the cv",
       timestamp: new Date().toISOString(),
       jobId: job.token || 0,
@@ -144,10 +157,39 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
   }
 }
 
+function handleJobApply(response: any, type: "JOB_APPLY", job: any, data: any) {
+  const use = parseResponse(response);
+  return {
+    status: true,
+    type: type,
+    jobId: job.token || 0,
+    response: use.data,
+    fileId: data.data.fileId,
+    timestamp: new Date().toISOString(),
+    message: response.message,
+  };
+}
+function handleResumeUpload(
+  response: any,
+  type: "RESUME_UPLOAD",
+  job: any,
+  data: any,
+) {
+  // const use = parseResponse(response);
+  return {
+    status: true,
+    type: type,
+    jobId: job.token || 0,
+    response: response.data,
+    fileId: data.data.fileId,
+    timestamp: new Date().toISOString(),
+    message: response.message,
+  };
+}
+
 export const getAiQueue = () => aiQueue;
 export const getAiWorker = () => aiWorker;
 
-// Helper function to wait for worker to be ready
 export const onWorkerReady = (
   callback: (queue: Queue, worker: Worker) => void,
 ): (() => void) => {
@@ -162,7 +204,6 @@ export const onWorkerReady = (
     }
   }, 100);
 
-  // Return cleanup function
   return () => clearInterval(checkInterval);
 };
 

@@ -4,7 +4,8 @@ import router from "./routes/route.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { GlobalErrorHandler } from "./utils/globalErrorHandler.js";
-
+import "./services/socket.js";
+import "./services/worker.js";
 const app = express();
 const PORT = 3000;
 
@@ -22,9 +23,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 db();
+
 app.use("/api/v1", router);
 app.use(GlobalErrorHandler);
 
 app.listen(PORT, () => {
-  console.log(`Jobber backend active on port ${PORT}`);
+  console.log(`Jobfaster backend active on port ${PORT}`);
 });
