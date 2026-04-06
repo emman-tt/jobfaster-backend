@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { sendError } from "../utils/sendError";
 import dotenv from "dotenv";
+import { sendSuccess } from "../utils/sendSuccess";
 dotenv.config();
 
 export interface userPayload {
@@ -14,7 +15,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
     const accessToken = req.cookies.accessToken;
     if (!accessToken) {
-      return sendError(res, "Unauthorized: No token provided", 401, "failed");
+      return sendError(res, "TOKEN_INVALID", 401, "failed");
     }
     if (!process.env.ACCESS_SECRET) {
       throw new Error("Access secret dont exist / wasnt provided");
@@ -29,6 +30,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
         }
 
         req.user = decoded;
+
         next();
       },
     );
@@ -43,19 +45,14 @@ export function RefreshAuth(req: Request, res: Response, next: NextFunction) {
     const refreshToken: string = req.cookies.refreshToken;
 
     if (!refreshToken) {
-      return sendError(res, "Unauthorized, no token provided", 401, "failed");
+      return sendError(res, "TOKEN_INVALID", 401, "failed");
     }
 
     if (!refreshSecret) throw new Error("Refresh secret was not provided");
 
     jwt.verify(refreshToken, refreshSecret, (err, payload) => {
       if (err) {
-        return sendError(
-          res,
-          "Invalid refresh token , session expired",
-          401,
-          "failed",
-        );
+        return sendError(res, "REFRESH_TOKEN_EXPIRED", 401, "failed");
       }
 
       if (!process.env.ACCESS_SECRET) {
@@ -73,10 +70,7 @@ export function RefreshAuth(req: Request, res: Response, next: NextFunction) {
         httpOnly: true,
       });
 
-      return res.status(201).json({
-        status: "success",
-        message: "User is authenticated",
-      });
+      return sendSuccess(res, undefined, "success", "REFRESH_SUCCESS", accessToken);
     });
   } catch (error) {
     next(error);

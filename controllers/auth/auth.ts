@@ -30,7 +30,7 @@ export async function register(
     });
 
     if (userExists) {
-      return sendError(res, "ACCOUNT_EXISTS", 401, "failed");
+      return sendError(res, "USER_EXISTS", 401, "failed");
     }
 
     const hashedPassword = await hashPassword(password);
@@ -64,11 +64,6 @@ export async function register(
 
     await t.commit();
 
-    res.cookie("accessToken", accessToken, {
-      maxAge: 1000 * 60 * 15,
-      secure: DEVELOPMENT == "production",
-      httpOnly: true,
-    });
     res.cookie("refreshToken", refreshToken, {
       maxAge: 1000 * 60 * 60 * 12 * 7,
       secure: DEVELOPMENT == "production",
@@ -78,7 +73,8 @@ export async function register(
       res,
       undefined,
       undefined,
-      "ACCOUNT_CREATED_SUCCESSFULLY",
+      "REGISTER_SUCCESS",
+      accessToken,
     );
   } catch (error) {
     t.rollback();
@@ -97,12 +93,12 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     });
 
     if (!user) {
-      return sendError(res, "INVALID_USER_CREDENTIALS", 401, "failed");
+      return sendError(res, "INVALID_CREDENTIALS", 401, "failed");
     }
 
     const isPassword = await bcrypt.compare(password, user.dataValues.password);
     if (!isPassword) {
-      return sendError(res, "INVALID_USER_CREDENTIALS", 401, "failed");
+      return sendError(res, "INVALID_CREDENTIALS", 401, "failed");
     }
 
     const parser = new UAParser();
@@ -117,23 +113,13 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       devicePrint: devicePrint,
     });
 
-    res.cookie("accessToken", accessToken, {
-      maxAge: 1000 * 60 * 15,
-      secure: DEVELOPMENT == "production",
-      httpOnly: true,
-    });
     res.cookie("refreshToken", refreshToken, {
       maxAge: 1000 * 60 * 60 * 12 * 7,
       secure: DEVELOPMENT == "production",
       httpOnly: true,
     });
 
-    return sendSuccess(
-      res,
-      undefined,
-      undefined,
-      "User logged in successfully",
-    );
+    return sendSuccess(res, undefined, undefined, "LOGIN_SUCCESS", accessToken);
   } catch (error) {
     console.log(error);
     next(error);

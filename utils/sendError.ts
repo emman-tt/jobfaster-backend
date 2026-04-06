@@ -1,25 +1,12 @@
 import { Response } from "express";
+import { ErrorMessage } from "../constants/resMessages";
 
-interface errorData {
-  statusCode: number;
-  message: string;
-  timestamp: string;
-  status: string;
-  res: any;
-}
 export function sendError(
   res: Response,
-  message: string,
+  message: ErrorMessage,
   statusCode: number,
   status: "failed" = "failed",
 ) {
-  // const errorResponse: errorData = {
-  //   statusCode: statusCode,
-  //   message: message,
-  //   timestamp: new Date().toISOString(),
-  //   status: status,
-  //   res: res,
-  // };
   res.status(statusCode).json({
     message,
     status,

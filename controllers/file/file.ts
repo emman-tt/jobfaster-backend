@@ -32,11 +32,7 @@ export async function uploadResume(
   next: NextFunction,
 ) {
   try {
-    const file = req.file;
-    if (!file) {
-      return sendError(res, "No file uploaded", 404, "failed");
-    }
-
+    const file = req.file as any;
     const buffer = file.buffer;
 
     const uploadResult: any = await new Promise((resolve, reject) => {
@@ -74,7 +70,7 @@ export async function uploadResume(
     };
     console.log(data);
 
-    return sendSuccess(res, 200, undefined, "Uploaded successfully", data);
+    return sendSuccess(res, 200, undefined, "UPLOAD_SUCCESS", data);
   } catch (error) {
     next(error);
   }
