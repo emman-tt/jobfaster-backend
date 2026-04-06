@@ -89,24 +89,45 @@ export async function register(
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, password } = req.body;
-    const hashedPassword = await hashPassword(password);
 
     const user = await User.findOne({
       where: {
         email: email,
-        password: hashedPassword,
       },
     });
 
     if (!user) {
-      return sendError(res, "Invalid user credentials", 401, "failed");
+      return sendError(res, "INVALID_USER_CREDENTIALS", 401, "failed");
     }
+
+    const isPassword = await bcrypt.compare(password, user.dataValues.password);
+    if (!isPassword) {
+      return sendError(res, "INVALID_USER_CREDENTIALS", 401, "failed");
+    }
+
     const parser = new UAParser();
     const ua = parser.setUA(req.headers["user-agent"] as any).getResult();
 
     const { accessToken, refreshToken } = await generateToken(email, "user");
 
-    fingerPrint(ua);
+    const { deviceName, devicePrint } = fingerPrint(ua);
+    await Token.create({
+      userId: user.dataValues.id,
+      deviceName: deviceName,
+      devicePrint: devicePrint,
+    });
+
+    res.cookie("accessToken", accessToken, {
+      maxAge: 1000 * 60 * 15,
+      secure: DEVELOPMENT == "production",
+      httpOnly: true,
+    });
+    res.cookie("refreshToken", refreshToken, {
+      maxAge: 1000 * 60 * 60 * 12 * 7,
+      secure: DEVELOPMENT == "production",
+      httpOnly: true,
+    });
+
     return sendSuccess(
       res,
       undefined,
@@ -114,6 +135,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       "User logged in successfully",
     );
   } catch (error) {
+    console.log(error);
     next(error);
   }
 }

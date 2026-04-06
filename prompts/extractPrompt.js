@@ -12,10 +12,10 @@ ${rawText}
 3. **Dates** — extract as written, do not reformat
 4. **Bullets** — each bullet point becomes a separate string in the points array
 5. **Skills** — extract all listed skills, tools, and technologies as a flat array
-6. **Languages** — if no proficiency is stated, set proficiency to "Not specified"
 7. **GPA** — only include if explicitly stated
 8. **Certifications** — extract name, issuer, year, and url if present
-9. **Projects** — extract name, description, tech stack, urls, and bullet points if present
+9. **Languages** — extract language names as a flat array of strings
+10. **Projects** — extract name, description, tech stack, urls, and bullet points if present
 
 ## THINGS TO NEVER DO
 - Do not add information not present in the resume
@@ -74,12 +74,7 @@ Must be directly parseable by JSON.parse(). Start with { and end with }.
       "url": ""
     }
   ],
-  "languages": [
-    {
-      "language": "",
-      "proficiency": ""
-    }
-  ]
+  "languages": []
 }
 `.trim()
 }

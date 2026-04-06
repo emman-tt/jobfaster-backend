@@ -1,5 +1,10 @@
 import Websocket, { WebSocketServer } from "ws";
-import { getAiQueue, getAiWorker, onWorkerReady } from "./worker.js";
+import {
+  connection,
+  getAiQueue,
+  getAiWorker,
+  onWorkerReady,
+} from "./worker.js";
 import { WebSocket } from "ws";
 import { uploadResume } from "../controllers/file/file.js";
 export const socket = new WebSocketServer({ port: 5000 });
@@ -23,18 +28,21 @@ socket.on("connection", (ws: WebSocket) => {
     const { type, data } = parsed;
 
     try {
+      await connection.connect().catch((err) => {
+        console.error("Failed to connect to Redis:", err);
+      });
       const aiQueue = getAiQueue();
       if (!aiQueue) {
         throw new Error("Queue not initialized, Redis unavailable");
       }
 
       if (type === "RESUME_UPLOAD") {
-        const extractedResumeText = await uploadResume(data);
         const job = await aiQueue.add(type, {
-          data: extractedResumeText,
+          data: data.file,
           type: type,
         });
-       return console.log(` Job ${job.id} added to queue`);
+        console.log(` Job ${job.id} added to queue`);
+        return;
       }
 
       const job = await aiQueue.add(type, { data, type: type });

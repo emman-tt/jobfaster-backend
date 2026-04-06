@@ -12,23 +12,26 @@ export interface userPayload {
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
-    const authHeader = req.headers["authorization"];
-    const accessToken = authHeader && authHeader.split(" ")[1];
+    const accessToken = req.cookies.accessToken;
     if (!accessToken) {
-      return sendError(res, "Unauthorized: No token provided", 401, undefined);
+      return sendError(res, "Unauthorized: No token provided", 401, "failed");
     }
     if (!process.env.ACCESS_SECRET) {
       throw new Error("Access secret dont exist / wasnt provided");
     }
 
-    jwt.verify(accessToken, process.env.ACCESS_SECRET, (err, decoded) => {
-      if (err?.name === 'TokenExpiredError') {
-        return sendError(res, "ACCESS_TOKEN_EXPIRED", 401, 'failed');
-      }
+    jwt.verify(
+      accessToken,
+      process.env.ACCESS_SECRET,
+      (err: any, decoded: any) => {
+        if (err?.name === "TokenExpiredError") {
+          return sendError(res, "ACCESS_TOKEN_EXPIRED", 401, "failed");
+        }
 
-      req.user = decoded 
-      next();
-    });
+        req.user = decoded;
+        next();
+      },
+    );
   } catch (error) {
     next(error);
   }
@@ -40,7 +43,7 @@ export function RefreshAuth(req: Request, res: Response, next: NextFunction) {
     const refreshToken: string = req.cookies.refreshToken;
 
     if (!refreshToken) {
-      return sendError(res, "Unauthorized, no token provided", 401, "error");
+      return sendError(res, "Unauthorized, no token provided", 401, "failed");
     }
 
     if (!refreshSecret) throw new Error("Refresh secret was not provided");
@@ -51,7 +54,7 @@ export function RefreshAuth(req: Request, res: Response, next: NextFunction) {
           res,
           "Invalid refresh token , session expired",
           401,
-          "error",
+          "failed",
         );
       }
 
@@ -64,10 +67,15 @@ export function RefreshAuth(req: Request, res: Response, next: NextFunction) {
         process.env.ACCESS_SECRET,
       );
 
+      res.cookie("accessToken", accessToken, {
+        maxAge: 1000 * 60 * 15,
+        secure: process.env.DEVELOPMENT == "production",
+        httpOnly: true,
+      });
+
       return res.status(201).json({
         status: "success",
         message: "User is authenticated",
-        accessToken: accessToken,
       });
     });
   } catch (error) {
