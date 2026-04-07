@@ -15,6 +15,8 @@ interface TokenModel extends Model<
   userId: string;
   deviceName: string;
   devicePrint: string;
+  lastUsed: Date;
+  token: string;
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;
 }
@@ -36,6 +38,14 @@ export const Token = sequelize.define<TokenModel>("token", {
   },
   devicePrint: {
     type: DataTypes.STRING,
+    allowNull: false,
+  },
+  token: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  lastUsed: {
+    type: DataTypes.DATE,
     allowNull: false,
   },
   createdAt: DataTypes.DATE,

@@ -4,6 +4,9 @@ import { sendError } from "../utils/sendError";
 import { sendSuccess } from "../utils/sendSuccess";
 import dotenv from "dotenv";
 dotenv.config();
+import { UAParser } from "ua-parser-js";
+import crypto from "crypto";
+import { Token } from "../models/token";
 
 export interface userPayload {
   sub: string;
@@ -40,46 +43,113 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export function RefreshAuth(req: Request, res: Response, next: NextFunction) {
+export async function RefreshAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const refreshSecret = process.env.REFRESH_SECRET;
+    const accessSecret = process.env.ACCESS_SECRET;
     const refreshToken: string = req.cookies.refreshToken;
 
     if (!refreshToken) {
       return sendError(res, "TOKEN_INVALID", 401, "failed");
     }
 
-    if (!refreshSecret) throw new Error("Refresh secret was not provided");
+    if (!refreshSecret || !accessSecret)
+      throw new Error("Token secret was not provided");
 
-    jwt.verify(refreshToken, refreshSecret, (err, payload) => {
-      if (err) {
+    let decodedPaylod: any;
+    try {
+      decodedPaylod = jwt.verify(refreshToken, refreshSecret);
+    } catch (error: any) {
+      if (error.name === "TokenExpiredError") {
+        await Token.destroy({
+          where: {
+            token: refreshToken,
+          },
+        });
+
         return sendError(res, "REFRESH_TOKEN_EXPIRED", 401, "failed");
       }
 
-      if (!process.env.ACCESS_SECRET) {
-        throw new Error("Access token wasnt provided");
-      }
+      return sendError(res, "TOKEN_INVALID", 401, "failed");
+    }
 
-      const accessToken = jwt.sign(
-        payload as userPayload,
-        process.env.ACCESS_SECRET,
-      );
-
-      res.cookie("accessToken", accessToken, {
-        maxAge: 1000 * 60 * 15,
-        secure: process.env.DEVELOPMENT == "production",
-        httpOnly: true,
-      });
-
-      return sendSuccess(
-        res,
-        undefined,
-        "success",
-        "REFRESH_SUCCESS",
-        accessToken,
-      );
+    const userId = decodedPaylod?.sub;
+    const parser = new UAParser();
+    const ua = parser.setUA(req.headers["user-agent"] as any).getResult();
+    const { deviceName, devicePrint } = fingerPrint(ua);
+    const tokenRecord = await Token.findOne({
+      where: {
+        devicePrint: devicePrint,
+        token: refreshToken,
+      },
     });
+
+    if (!tokenRecord) {
+      res.clearCookie("refreshToken");
+      console.log("security alert , revoking all user tokens");
+      await Token.destroy({
+        where: {
+          userId: userId,
+        },
+      });
+      return sendError(res, "TOKEN_INVALID", 401, "failed");
+    }
+
+    await tokenRecord.update({
+      lastUsed: new Date(),
+    });
+
+    const accessToken = jwt.sign(
+      {
+        sub: decodedPaylod.sub,
+        role: decodedPaylod.role,
+      },
+      accessSecret,
+      {
+        expiresIn: "15m",
+      },
+    );
+
+    res.cookie("accessToken", accessToken, {
+      maxAge: 1000 * 60 * 15,
+      secure: process.env.DEVELOPMENT == "production",
+      httpOnly: true,
+    });
+
+    return sendSuccess(
+      res,
+      undefined,
+      "success",
+      "REFRESH_SUCCESS",
+      accessToken,
+    );
   } catch (error) {
     next(error);
   }
+}
+
+interface FingerPrinting {
+  deviceName: string;
+  devicePrint: string;
+}
+
+function fingerPrint(ua: any): FingerPrinting {
+  const browser = ua.browser.name || "Browser";
+  const os = ua.os.name || "OS";
+  const device = `${browser} on ${os}`;
+
+  const fingerPrintString = `${browser}|${os}`;
+  const fingerPrintHash = crypto
+    .createHash("sha256")
+    .update(fingerPrintString)
+    .digest("hex");
+
+  return {
+    deviceName: device,
+    devicePrint: fingerPrintHash,
+  };
 }

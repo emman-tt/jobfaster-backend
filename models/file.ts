@@ -20,6 +20,7 @@ interface FileModel extends Model<
     layoutId: string | null;
     size: number;
     content: string;
+    downloadUrl: string;
   };
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;

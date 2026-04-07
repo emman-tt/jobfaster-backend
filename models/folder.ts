@@ -27,9 +27,9 @@ export const Folder = sequelize.define<FolderModel>("folder", {
     allowNull: false,
     primaryKey: true,
   },
-  size: {
-    type: DataTypes.DOUBLE,
-    allowNull: false,
+  metaData: {
+    type: DataTypes.JSONB,
+    allowNull:false
   },
   createdAt: DataTypes.DATE,
   updatedAt: DataTypes.DATE,

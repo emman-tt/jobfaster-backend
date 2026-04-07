@@ -8,7 +8,6 @@ import dotenv from "dotenv";
 import { UAParser } from "ua-parser-js";
 import crypto from "crypto";
 import { Token } from "../../models/token";
-import { sequelize } from "../../database/pool";
 
 dotenv.config();
 const { DEVELOPMENT } = process.env;
@@ -21,7 +20,7 @@ export async function register(
   try {
     const { email, password, name } = req.body;
 
-    const userExists = await User.findOne({
+    const userExists = await User.count({
       where: {
         email: email,
       },
@@ -51,6 +50,8 @@ export async function register(
       userId: user.dataValues.id,
       deviceName: deviceName,
       devicePrint: devicePrint,
+      token: refreshToken,
+      lastUsed: new Date(),
     });
 
     res.cookie("refreshToken", refreshToken, {
@@ -98,11 +99,28 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     );
 
     const { deviceName, devicePrint } = fingerPrint(ua);
-    await Token.create({
-      userId: user.dataValues.id,
-      deviceName: deviceName,
-      devicePrint: devicePrint,
+
+    const existingToken = await Token.findOne({
+      where: {
+        userId: user.dataValues.id,
+        devicePrint: devicePrint,
+      },
     });
+
+    if (existingToken) {
+      await existingToken.update({
+        token: refreshToken,
+        lastUsed: new Date(),
+      });
+    } else {
+      await Token.create({
+        userId: user.dataValues.id,
+        deviceName: deviceName,
+        devicePrint: devicePrint,
+        lastUsed: new Date(),
+        token: refreshToken,
+      });
+    }
 
     res.cookie("refreshToken", refreshToken, {
       maxAge: 1000 * 60 * 60 * 12 * 7,

@@ -14,7 +14,7 @@ interface PointerModel extends Model<
   id: CreationOptional<string>;
   userId: string;
 
-  type: string;
+  type: "FILE"| "FOLDER";
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;
 }
@@ -30,7 +30,6 @@ export const Pointer = sequelize.define<PointerModel>("pointer", {
     type: DataTypes.UUID,
     allowNull: false,
   },
-
   type: {
     type: DataTypes.ENUM("FILE", "FOLDER"),
     allowNull: false,
