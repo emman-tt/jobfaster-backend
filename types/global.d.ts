@@ -1,4 +1,4 @@
-export interface userPayload {
+interface userPayload {
   sub: string;
   role: string;
   email?: string;
@@ -11,5 +11,3 @@ declare global {
     }
   }
 }
-
-export {};

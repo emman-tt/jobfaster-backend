@@ -12,7 +12,10 @@ interface FolderModel extends Model<
   InferCreationAttributes<FolderModel>
 > {
   id: CreationOptional<string>;
-  size: number;
+  metaData: {
+    size: number;
+    name: string;
+  };
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;
 }

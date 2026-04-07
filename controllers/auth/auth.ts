@@ -18,8 +18,6 @@ export async function register(
   res: Response,
   next: NextFunction,
 ) {
-  const t = await sequelize.transaction();
-
   try {
     const { email, password, name } = req.body;
 
@@ -36,33 +34,24 @@ export async function register(
     const hashedPassword = await hashPassword(password);
     const parser = new UAParser();
     const ua = parser.setUA(req.headers["user-agent"] as any).getResult();
-
-    const { accessToken, refreshToken } = await generateToken(email, "user");
     const { deviceName, devicePrint } = fingerPrint(ua);
 
-    const user = await User.create(
-      {
-        name: name,
-        email: email,
-        password: hashedPassword,
-      },
-      {
-        transaction: t,
-      },
+    const user = await User.create({
+      name: name,
+      email: email,
+      password: hashedPassword,
+    });
+
+    const { accessToken, refreshToken } = await generateToken(
+      user.dataValues.id,
+      "user",
     );
 
-    await Token.create(
-      {
-        userId: user.dataValues.id,
-        deviceName: deviceName,
-        devicePrint: devicePrint,
-      },
-      {
-        transaction: t,
-      },
-    );
-
-    await t.commit();
+    await Token.create({
+      userId: user.dataValues.id,
+      deviceName: deviceName,
+      devicePrint: devicePrint,
+    });
 
     res.cookie("refreshToken", refreshToken, {
       maxAge: 1000 * 60 * 60 * 12 * 7,
@@ -77,7 +66,6 @@ export async function register(
       accessToken,
     );
   } catch (error) {
-    t.rollback();
     console.log(error);
     next(error);
   }
@@ -104,7 +92,10 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     const parser = new UAParser();
     const ua = parser.setUA(req.headers["user-agent"] as any).getResult();
 
-    const { accessToken, refreshToken } = await generateToken(email, "user");
+    const { accessToken, refreshToken } = await generateToken(
+      user.dataValues.id,
+      "user",
+    );
 
     const { deviceName, devicePrint } = fingerPrint(ua);
     await Token.create({

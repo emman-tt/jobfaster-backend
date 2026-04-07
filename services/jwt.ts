@@ -7,13 +7,13 @@ interface AuthTokens {
   refreshToken: string;
 }
 export async function generateToken(
-  email: string,
+  userId: string,
   role: string,
 ): Promise<AuthTokens> {
   const accessSecret = process.env.ACCESS_SECRET;
   const refreshSecret = process.env.REFRESH_SECRET;
   const payload = {
-    sub: email,
+    sub: userId,
     role: role,
   };
 

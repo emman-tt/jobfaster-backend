@@ -49,7 +49,7 @@
     "dev": "tsx watch server.ts",
     "build": "tsc",
     "start": " server.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --project tsconfig.json --noEmit"
   },
   "author": "Emmanuel Acquah",
   "license": "ISC",

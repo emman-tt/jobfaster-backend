@@ -1,9 +1,10 @@
 import * as PdfParse from "pdf-parse-new";
 import { v2 as cloudinary } from "cloudinary";
 import { NextFunction, Request, Response } from "express";
-import { sendError } from "../../utils/sendError";
+
 import { sendSuccess } from "../../utils/sendSuccess";
 import dotenv from "dotenv";
+import { User } from "../../models/user";
 
 dotenv.config();
 
@@ -34,6 +35,12 @@ export async function uploadResume(
   try {
     const file = req.file as any;
     const buffer = file.buffer;
+    const decoded = req?.user;
+
+    const userId = decoded?.sub;
+    const user = await User.findByPk(userId, {
+      attributes: ["id"],
+    });
 
     const uploadResult: any = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(

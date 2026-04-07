@@ -1,26 +1,27 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { sendError } from "../utils/sendError";
-import dotenv from "dotenv";
 import { sendSuccess } from "../utils/sendSuccess";
+import dotenv from "dotenv";
 dotenv.config();
 
 export interface userPayload {
   sub: string;
   role: string;
-  email: string;
+  email?: string;
 }
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
-    const accessToken = req.cookies.accessToken;
+    const authHeader = req.headers["authorization"];
+    const accessToken = authHeader && authHeader.split(" ")[1];
+
     if (!accessToken) {
       return sendError(res, "TOKEN_INVALID", 401, "failed");
     }
     if (!process.env.ACCESS_SECRET) {
       throw new Error("Access secret dont exist / wasnt provided");
     }
-
     jwt.verify(
       accessToken,
       process.env.ACCESS_SECRET,
@@ -29,7 +30,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
           return sendError(res, "ACCESS_TOKEN_EXPIRED", 401, "failed");
         }
 
-        req.user = decoded;
+        (req as any).user = decoded as userPayload;
 
         next();
       },
@@ -70,7 +71,13 @@ export function RefreshAuth(req: Request, res: Response, next: NextFunction) {
         httpOnly: true,
       });
 
-      return sendSuccess(res, undefined, "success", "REFRESH_SUCCESS", accessToken);
+      return sendSuccess(
+        res,
+        undefined,
+        "success",
+        "REFRESH_SUCCESS",
+        accessToken,
+      );
     });
   } catch (error) {
     next(error);

@@ -12,8 +12,15 @@ interface FileModel extends Model<
   InferCreationAttributes<FileModel>
 > {
   id: CreationOptional<string>;
-  size: number;
+  source: "upload" | "builder";
   folderId: string | null;
+  metaData: {
+    name: string;
+    extension: "pdf" | "docx";
+    layoutId: string | null;
+    size: number;
+    content: string;
+  };
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;
 }
@@ -25,13 +32,18 @@ export const File = sequelize.define<FileModel>("file", {
     allowNull: false,
     primaryKey: true,
   },
-  size: {
-    type: DataTypes.DOUBLE,
-    allowNull: false,
-  },
+
   folderId: {
     type: DataTypes.UUID,
     allowNull: true,
+  },
+  metaData: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+  },
+  source: {
+    type: DataTypes.ENUM("upload", "builder"),
+    allowNull: false,
   },
   createdAt: DataTypes.DATE,
   updatedAt: DataTypes.DATE,
