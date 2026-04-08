@@ -99,7 +99,7 @@ export async function uploadResume(
         metaData: {
           name: data.name,
           extension: data.extension,
-          layoutId: data.layoutId,
+          layoutId: null,
           size: data.size,
           content: data.content,
           downloadUrl: data.download,

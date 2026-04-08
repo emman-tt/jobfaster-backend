@@ -1,6 +1,6 @@
 import express from "express";
 const router = express.Router();
-import { tailorResume } from "../../controllers/file/tailorResume";
+import { tailorResume } from "../../controllers/Program/tailorResume";
 
 router.post("/tailor/resume", tailorResume);
 

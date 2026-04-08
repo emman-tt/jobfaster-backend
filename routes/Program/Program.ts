@@ -1,10 +1,12 @@
 import express, { NextFunction, Request, Response } from "express";
 const router = express.Router();
 import { upload } from "../../config/diskStorage";
-import { uploadResume } from "../../controllers/file/file";
+import { uploadResume } from "../../controllers/Program/file";
 import { authenticate } from "../../middleware/authenticate";
-import { body, validationResult } from "express-validator";
+import { body, check, query, validationResult } from "express-validator";
 import { sendError } from "../../utils/sendError";
+import { UploadFolder } from "../../controllers/Program/folder";
+import { getPrograms } from "../../controllers/Program/Pointer";
 
 const validateFile = [
   upload.single("file"),
@@ -25,6 +27,18 @@ const validateFile = [
   },
 ];
 
+const validateFolder = [
+  query("folderName").isEmpty(),
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return sendError(res, "NO_FOLDER", 422, "failed");
+    }
+    next();
+  },
+];
+router.get("/", authenticate, getPrograms);
 router.post("/resume", validateFile, authenticate, uploadResume);
+router.post("/folder/:folderName", validateFolder, authenticate, UploadFolder);
 
-export const fileRouter = router;
+export const ProgramRouter = router;

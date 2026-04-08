@@ -6,7 +6,7 @@ import {
   onWorkerReady,
 } from "./worker.js";
 import { WebSocket } from "ws";
-import { uploadResume } from "../controllers/file/file.js";
+import { uploadResume } from "../controllers/Program/file.js";
 export const socket = new WebSocketServer({ port: 5000 });
 
 const clients = new Set<WebSocket>();

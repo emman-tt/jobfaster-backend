@@ -13,7 +13,6 @@ interface PointerModel extends Model<
 > {
   id: CreationOptional<string>;
   userId: string;
-
   type: "FILE"| "FOLDER";
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;

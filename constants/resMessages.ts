@@ -5,6 +5,7 @@ export type ErrorMessage =
   | "REFRESH_TOKEN_EXPIRED"
   | "TOKEN_INVALID"
   | "NO_FILE"
+  | "NO_FOLDER"
   | "INVALID_FILE_TYPE"
   | "FILE_TOO_LARGE"
   | "USER_NOT_FOUND"
@@ -23,4 +24,5 @@ export type SuccessMessage =
   | "PASSWORD_CHANGED"
   | "RESUME_CREATED"
   | "RESUME_UPDATED"
-  | "RESUME_OPTIMIZED";
+  | "RESUME_OPTIMIZED"
+  | "FETCH_SUCCESS";

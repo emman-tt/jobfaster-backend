@@ -11,18 +11,22 @@ export async function db() {
   User.hasMany(Pointer, {
     onDelete: "CASCADE",
     foreignKey: "userId",
+    as: "programs",
   });
   Pointer.belongsTo(User, {
     foreignKey: "userId",
+    as: "programs",
   });
 
   Pointer.hasOne(File, {
     foreignKey: "id",
     sourceKey: "id",
+    as: "files",
   });
   File.belongsTo(Pointer, {
     foreignKey: "id",
     targetKey: "id",
+    as: "files",
   });
 
   User.hasMany(Token, {
@@ -35,10 +39,12 @@ export async function db() {
   Pointer.hasOne(Folder, {
     foreignKey: "id",
     sourceKey: "id",
+    as: "folders",
   });
   Folder.belongsTo(Pointer, {
     foreignKey: "id",
     targetKey: "id",
+    as: "folders",
   });
   try {
     // sequelize.sync({alter:true});
