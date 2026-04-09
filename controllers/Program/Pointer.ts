@@ -3,6 +3,7 @@ import { Pointer } from "../../models/pointer";
 import { sendSuccess } from "../../utils/sendSuccess";
 import { File } from "../../models/file";
 import { Folder } from "../../models/folder";
+import { it } from "node:test";
 
 export async function getPrograms(
   req: Request,
@@ -13,20 +14,34 @@ export async function getPrograms(
     const decoded = req.user;
     const userId = decoded?.sub;
 
-    const programs = await Pointer.findAll({
+    const files = await Pointer.findAll({
       where: {
         userId: userId,
+        type: "FILE",
       },
       attributes: ["type"],
+      include: [{ model: File, as: "file", required: true }],
+    });
+    const folders = await Pointer.findAll({
+      where: {
+        userId: userId,
+        type: "FOLDER",
+      },
+      attributes: ["type"],
+
       include: [
-        { model: File, as: "files" },
-        { model: Folder, as: "folders" },
+        {
+          model: Folder,
+          as: "folder",
+          required: true,
+        },
       ],
     });
-
-
-    sendSuccess(res, 200, "success", "FETCH_SUCCESS", programs || []);
+    const allPrograms = [...files, ...folders];
+  
+    sendSuccess(res, 200, "success", "FETCH_SUCCESS", allPrograms || []);
   } catch (error) {
+    console.log(error);
     next(error);
   }
 }

@@ -21,12 +21,12 @@ export async function db() {
   Pointer.hasOne(File, {
     foreignKey: "id",
     sourceKey: "id",
-    as: "files",
+    as: "file",
   });
   File.belongsTo(Pointer, {
     foreignKey: "id",
     targetKey: "id",
-    as: "files",
+    as: "file",
   });
 
   User.hasMany(Token, {
@@ -39,12 +39,12 @@ export async function db() {
   Pointer.hasOne(Folder, {
     foreignKey: "id",
     sourceKey: "id",
-    as: "folders",
+    as: "folder",
   });
   Folder.belongsTo(Pointer, {
     foreignKey: "id",
     targetKey: "id",
-    as: "folders",
+    as: "folder",
   });
   try {
     // sequelize.sync({alter:true});

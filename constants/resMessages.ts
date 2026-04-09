@@ -11,7 +11,8 @@ export type ErrorMessage =
   | "USER_NOT_FOUND"
   | "USER_EXISTS"
   | "INTERNAL_ERROR"
-  | "NOT_FOUND";
+  | "NOT_FOUND"
+  | "NO_TOKEN";
 
 export type SuccessMessage =
   | "LOGIN_SUCCESS"

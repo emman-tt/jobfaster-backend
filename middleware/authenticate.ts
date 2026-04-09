@@ -20,7 +20,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     const accessToken = authHeader && authHeader.split(" ")[1];
 
     if (!accessToken) {
-      return sendError(res, "TOKEN_INVALID", 401, "failed");
+      return sendError(res, "NO_TOKEN", 401, "failed");
     }
     if (!process.env.ACCESS_SECRET) {
       throw new Error("Access secret dont exist / wasnt provided");
