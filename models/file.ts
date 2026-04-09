@@ -33,7 +33,6 @@ export const File = sequelize.define<FileModel>("file", {
     allowNull: false,
     primaryKey: true,
   },
-
   folderId: {
     type: DataTypes.UUID,
     allowNull: true,

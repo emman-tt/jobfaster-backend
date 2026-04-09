@@ -26,4 +26,5 @@ export type SuccessMessage =
   | "RESUME_CREATED"
   | "RESUME_UPDATED"
   | "RESUME_OPTIMIZED"
-  | "FETCH_SUCCESS";
+  | "FETCH_SUCCESS"
+  | "UPDATE SUCCESS";

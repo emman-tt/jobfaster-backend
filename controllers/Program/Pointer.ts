@@ -4,6 +4,7 @@ import { sendSuccess } from "../../utils/sendSuccess";
 import { File } from "../../models/file";
 import { Folder } from "../../models/folder";
 import { it } from "node:test";
+import { sendError } from "../../utils/sendError";
 
 export async function getPrograms(
   req: Request,
@@ -28,7 +29,6 @@ export async function getPrograms(
         type: "FOLDER",
       },
       attributes: ["type"],
-
       include: [
         {
           model: Folder,
@@ -38,8 +38,45 @@ export async function getPrograms(
       ],
     });
     const allPrograms = [...files, ...folders];
-  
+
     sendSuccess(res, 200, "success", "FETCH_SUCCESS", allPrograms || []);
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+}
+
+export async function MoveFile(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const { fileId, folderId } = req.body;
+
+    const decoded = req.user;
+    const userId = decoded?.sub;
+
+    const fileExist = await File.findOne({
+      where: {
+        id: fileId,
+      },
+    });
+
+    if (!fileExist) {
+      return sendError(res, "NO_FILE", 404, "failed");
+    }
+    const folderExist = await Folder.findByPk(folderId);
+
+    if (!folderExist) {
+      return sendError(res, "NO_FOLDER", 404, "failed");
+    }
+
+    await fileExist.update({
+      folderId: folderExist.dataValues.id,
+    });
+
+    sendSuccess(res, undefined, "success", "UPDATE SUCCESS");
   } catch (error) {
     console.log(error);
     next(error);

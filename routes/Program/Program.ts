@@ -6,7 +6,7 @@ import { authenticate } from "../../middleware/authenticate";
 import { body, check, query, validationResult } from "express-validator";
 import { sendError } from "../../utils/sendError";
 import { UploadFolder } from "../../controllers/Program/folder";
-import { getPrograms } from "../../controllers/Program/Pointer";
+import { getPrograms, MoveFile } from "../../controllers/Program/Pointer";
 
 const validateFile = [
   upload.single("file"),
@@ -28,7 +28,7 @@ const validateFile = [
 ];
 
 const validateFolder = [
-  query("folderName").isEmpty(),
+  query("folderName").notEmpty(),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -37,8 +37,23 @@ const validateFolder = [
     next();
   },
 ];
+const validateMoveFile = [
+  body("fileId").notEmpty().isUUID(),
+  body("folderId").notEmpty().isUUID(),
+  (req: Request, res: Response, next: NextFunction) => {
+  
+    const errors = validationResult(req);
+  
+    if (!errors.isEmpty()) {
+      return sendError(res, "NO_FILE", 422, "failed");
+    }
+    next();
+  },
+];
+
 router.get("/", authenticate, getPrograms);
 router.post("/resume", validateFile, authenticate, uploadResume);
+router.put("/file/move", validateMoveFile, authenticate, MoveFile);
 router.post("/folder/:folderName", validateFolder, authenticate, UploadFolder);
 
 export const ProgramRouter = router;
