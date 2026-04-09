@@ -9,7 +9,6 @@ import { Pointer } from "../../models/pointer";
 import { UUIDV4 } from "sequelize";
 import { sequelize } from "../../database/pool";
 import { File } from "../../models/file";
-import { t } from "@upstash/redis/error-8y4qG0W2";
 
 dotenv.config();
 
@@ -114,6 +113,7 @@ export async function uploadResume(
 
     return sendSuccess(res, 200, undefined, "UPLOAD_SUCCESS", data);
   } catch (error) {
+    console.log(error)
     t.rollback();
     next(error);
   }

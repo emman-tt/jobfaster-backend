@@ -4,6 +4,7 @@ import { login, register } from "../../controllers/auth/auth";
 import { body, validationResult } from "express-validator";
 import { sendError } from "../../utils/sendError";
 import { RefreshAuth } from "../../middleware/authenticate";
+import { logout } from "../../controllers/auth/auth";
 const router = express.Router();
 
 const validateRegister = [
@@ -33,5 +34,6 @@ const validateLogin = [
 router.post("/register", validateRegister, register);
 router.post("/login", validateLogin, login);
 router.post("/refresh", RefreshAuth);
+router.post("/logout", logout);
 
 export const authRouter = router;

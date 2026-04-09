@@ -37,7 +37,24 @@ export async function getPrograms(
         },
       ],
     });
-    const allPrograms = [...files, ...folders];
+
+    const formatedFolders = folders.map((folderPointer) => {
+      const folder = folderPointer?.folder;
+
+      const folderFiles = files
+        .filter((filePointer) => filePointer?.file?.folderId === folder.id)
+        .map((filePointer) => filePointer?.file);
+
+      return {
+        type: "FOLDER",
+        folder: {
+          ...folder.toJSON(),
+          files: folderFiles,
+        },
+      };
+    });
+
+    const allPrograms = [...files, ...formatedFolders];
 
     sendSuccess(res, 200, "success", "FETCH_SUCCESS", allPrograms || []);
   } catch (error) {

@@ -27,3 +27,4 @@ fly.toml
 Dockerfile
 .github/workflows/fly-deploy.yml
 .dockerignore
+AGENTS.md

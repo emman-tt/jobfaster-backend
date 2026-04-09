@@ -54,10 +54,11 @@ export async function register(
       lastUsed: new Date(),
     });
 
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie('refreshToken', refreshToken, {
       maxAge: 1000 * 60 * 60 * 12 * 7,
-      secure: DEVELOPMENT == "production",
+      secure: DEVELOPMENT == 'production',
       httpOnly: true,
+      sameSite: 'lax'
     });
     return sendSuccess(
       res,
@@ -95,10 +96,10 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
     const { accessToken, refreshToken } = await generateToken(
       user.dataValues.id,
-      "user",
-    );
+      'user',
+    )
 
-    const { deviceName, devicePrint } = fingerPrint(ua);
+    const { deviceName, devicePrint } = fingerPrint(ua)
 
     const existingToken = await Token.findOne({
       where: {
@@ -122,10 +123,11 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       });
     }
 
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie('refreshToken', refreshToken, {
       maxAge: 1000 * 60 * 60 * 12 * 7,
-      secure: DEVELOPMENT == "production",
+      secure: DEVELOPMENT == 'production',
       httpOnly: true,
+      sameSite: 'lax'
     });
 
     return sendSuccess(res, undefined, undefined, "LOGIN_SUCCESS", accessToken);
@@ -160,4 +162,25 @@ function fingerPrint(ua: any): FingerPrinting {
 async function hashPassword(password: string): Promise<string> {
   const hashed = await bcrypt.hash(password, 10);
   return hashed;
+}
+
+export async function logout(req: Request, res: Response, next: NextFunction) {
+  try {
+    const refreshToken = req.cookies.refreshToken
+    
+    if (refreshToken) {
+      await Token.destroy({
+        where: {
+          token: refreshToken,
+        },
+      })
+    }
+    
+    res.clearCookie('refreshToken')
+    
+    return sendSuccess(res, undefined, 'success', 'LOGOUT_SUCCESS')
+  } catch (error) {
+    console.error('Logout error:', error)
+    next(error)
+  }
 }
