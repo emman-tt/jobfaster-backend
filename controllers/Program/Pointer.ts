@@ -6,6 +6,28 @@ import { Folder } from "../../models/folder";
 import { it } from "node:test";
 import { sendError } from "../../utils/sendError";
 
+export async function deleteProgram(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const decoded = req.user;
+    const userId = decoded?.sub;
+    const programId = req.params.id as string;
+
+    await Pointer.destroy({
+      where: {
+        id: programId,
+      },
+    });
+
+    sendSuccess(res, 200, "success", "DELETE_SUCCESS");
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getPrograms(
   req: Request,
   res: Response,

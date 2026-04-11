@@ -23,6 +23,7 @@ export async function db() {
     foreignKey: "id",
     sourceKey: "id",
     as: "file",
+    onDelete: "CASCADE",
   });
   File.belongsTo(Pointer, {
     foreignKey: "id",
@@ -41,6 +42,7 @@ export async function db() {
     foreignKey: "id",
     sourceKey: "id",
     as: "folder",
+    onDelete: "CASCADE",
   });
   Folder.belongsTo(Pointer, {
     foreignKey: "id",
@@ -48,21 +50,19 @@ export async function db() {
     as: "folder",
   });
 
-
   User.hasMany(Activity, {
-    foreignKey:"userId",
-    onDelete :"CASCADE",
-    as:'activity'
-  })
+    foreignKey: "userId",
+    onDelete: "CASCADE",
+    as: "activity",
+  });
 
   Activity.belongsTo(User, {
-    foreignKey:'userId',
-    as:'activity'
-  })
-
+    foreignKey: "userId",
+    as: "activity",
+  });
 
   try {
-    // sequelize.sync({alter:true}); 
+    // sequelize.sync({alter:true});
   } catch (error) {
     console.log(error);
   }
