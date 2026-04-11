@@ -3,6 +3,7 @@ import { User } from "../models/user.js";
 import { File } from "../models/file.js";
 import { Folder } from "../models/folder.js";
 import { Pointer } from "../models/pointer.js";
+import { Activity } from "../models/activity.js";
 import dotenv from "dotenv";
 import { Token } from "../models/token.js";
 dotenv.config();
@@ -46,8 +47,22 @@ export async function db() {
     targetKey: "id",
     as: "folder",
   });
+
+
+  User.hasMany(Activity, {
+    foreignKey:"userId",
+    onDelete :"CASCADE",
+    as:'activity'
+  })
+
+  Activity.belongsTo(User, {
+    foreignKey:'userId',
+    as:'activity'
+  })
+
+
   try {
-    // sequelize.sync({alter:true});
+    // sequelize.sync({alter:true}); 
   } catch (error) {
     console.log(error);
   }

@@ -20,7 +20,7 @@ export async function getPrograms(
         userId: userId,
         type: "FILE",
       },
-      attributes: ["type"],
+      attributes: ["type", "updatedAt"],
       include: [{ model: File, as: "file", required: true }],
     });
     const folders = await Pointer.findAll({
@@ -28,7 +28,7 @@ export async function getPrograms(
         userId: userId,
         type: "FOLDER",
       },
-      attributes: ["type"],
+      attributes: ["type", "updatedAt"],
       include: [
         {
           model: Folder,
@@ -47,6 +47,7 @@ export async function getPrograms(
 
       return {
         type: "FOLDER",
+        updatedAt: folderPointer.updatedAt,
         folder: {
           ...folder.toJSON(),
           files: folderFiles,

@@ -77,29 +77,31 @@ export async function RefreshAuth(
       return sendError(res, "TOKEN_INVALID", 401, "failed");
     }
 
-    const userId = decodedPaylod?.sub
-    const parser = new UAParser()
-    const ua = parser.setUA(req.headers['user-agent'] as any).getResult()
+    const userId = decodedPaylod?.sub;
+    const parser = new UAParser();
+    const ua = parser.setUA(req.headers["user-agent"] as any).getResult();
 
     const tokenRecord = await Token.findOne({
       where: {
         userId: userId,
         token: refreshToken,
       },
-    })
+    });
 
     if (!tokenRecord) {
-      res.clearCookie('refreshToken')
-      const existingTokens = await Token.count({ where: { userId } })
+      res.clearCookie("refreshToken");
+      const existingTokens = await Token.count({ where: { userId } });
       if (existingTokens > 0) {
-        console.error('security alert - token not found but user has tokens, possible theft attempt')
+        console.error(
+          "security alert - token not found but user has tokens, possible theft attempt",
+        );
         await Token.destroy({
           where: {
             userId: userId,
           },
-        })
+        });
       }
-      return sendError(res, 'TOKEN_INVALID', 401, 'failed')
+      return sendError(res, "TOKEN_INVALID", 401, "failed");
     }
 
     await tokenRecord.update({

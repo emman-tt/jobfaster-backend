@@ -4,6 +4,7 @@ import { sequelize } from "../../database/pool";
 import { Folder } from "../../models/folder";
 import { sendSuccess } from "../../utils/sendSuccess";
 import { v4 as uuidv4 } from "uuid";
+import { Activity } from "../../models/activity";
 export async function UploadFolder(
   req: Request,
   res: Response,
@@ -21,6 +22,17 @@ export async function UploadFolder(
         id: id,
         userId,
         type: "FOLDER",
+      },
+      {
+        transaction: t,
+      },
+    );
+
+    await Activity.create(
+      {
+        userId: userId,
+        type: "FOLDER",
+        message: `Created a new folder - ${folderName}`,
       },
       {
         transaction: t,

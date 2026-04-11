@@ -3,7 +3,7 @@ const router = express.Router();
 import { upload } from "../../config/diskStorage";
 import { uploadResume } from "../../controllers/Program/file";
 import { authenticate } from "../../middleware/authenticate";
-import { body, check, query, validationResult } from "express-validator";
+import { body, check, param, query, validationResult } from "express-validator";
 import { sendError } from "../../utils/sendError";
 import { UploadFolder } from "../../controllers/Program/folder";
 import { getPrograms, MoveFile } from "../../controllers/Program/Pointer";
@@ -28,7 +28,7 @@ const validateFile = [
 ];
 
 const validateFolder = [
-  query("folderName").notEmpty(),
+  param("folderName").notEmpty(),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -41,9 +41,8 @@ const validateMoveFile = [
   body("fileId").notEmpty().isUUID(),
   body("folderId").notEmpty().isUUID(),
   (req: Request, res: Response, next: NextFunction) => {
-  
     const errors = validationResult(req);
-  
+
     if (!errors.isEmpty()) {
       return sendError(res, "NO_FILE", 422, "failed");
     }

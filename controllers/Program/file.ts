@@ -9,6 +9,7 @@ import { Pointer } from "../../models/pointer";
 import { UUIDV4 } from "sequelize";
 import { sequelize } from "../../database/pool";
 import { File } from "../../models/file";
+import { Activity } from "../../models/activity";
 
 dotenv.config();
 
@@ -91,6 +92,17 @@ export async function uploadResume(
       },
     );
 
+    await Activity.create(
+      {
+        message: `Uploaded a new file - ${data.name}.${data.extension}`,
+        userId: userId,
+        type: "FILE",
+      },
+      {
+        transaction: t,
+      },
+    );
+
     await File.create(
       {
         id: id,
@@ -113,7 +125,7 @@ export async function uploadResume(
 
     return sendSuccess(res, 200, undefined, "UPLOAD_SUCCESS", data);
   } catch (error) {
-    console.log(error)
+    console.log(error);
     t.rollback();
     next(error);
   }
