@@ -6,6 +6,7 @@ import cors from "cors";
 import { GlobalErrorHandler } from "./utils/globalErrorHandler.js";
 import "./services/socket.js";
 import "./services/worker.js";
+import { auth } from "./services/better-auth.js";
 const app = express();
 const PORT = 3000;
 
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ extended: false }));
 db();
 
 app.use("/api/v1", router);
+app.use(auth.handler);
 app.use(GlobalErrorHandler);
 
 app.listen(PORT, () => {

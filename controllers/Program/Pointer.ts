@@ -5,25 +5,48 @@ import { File } from "../../models/file";
 import { Folder } from "../../models/folder";
 import { it } from "node:test";
 import { sendError } from "../../utils/sendError";
+import { sequelize } from "../../database/pool";
+import { Activity } from "../../models/activity";
 
 export async function deleteProgram(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
+  const t = await sequelize.transaction();
   try {
     const decoded = req.user;
-    const userId = decoded?.sub;
+    const userId = decoded?.sub as string;
     const programId = req.params.id as string;
 
-    await Pointer.destroy({
-      where: {
-        id: programId,
-      },
-    });
+    const progarm = await Pointer.findByPk(programId);
+
+    if (progarm) {
+      await progarm.destroy({ transaction: t });
+      progarm.type == "FILE"
+        ? await Activity.create(
+            {
+              userId,
+              message: `Deleted a  ${progarm?.type.toLowerCase()}   `,
+              type: "FILE",
+            },
+            { transaction: t },
+          )
+        : await Activity.create(
+            {
+              userId,
+              message: `Deleted a  ${progarm?.type.toLowerCase()} `,
+              type: "FOLDER",
+            },
+            { transaction: t },
+          );
+    }
+
+    await t.commit();
 
     sendSuccess(res, 200, "success", "DELETE_SUCCESS");
   } catch (error) {
+    await t.rollback();
     next(error);
   }
 }

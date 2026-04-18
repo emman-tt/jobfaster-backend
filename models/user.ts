@@ -16,6 +16,8 @@ interface UserModel extends Model<
   name: string;
   password: string;
   email: string;
+  emailVerified: CreationOptional<boolean>;
+  image: CreationOptional<string>;
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;
 }
@@ -37,6 +39,15 @@ export const User = sequelize.define<UserModel>("user", {
   email: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique: true,
+  },
+  emailVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  image: {
+    type: DataTypes.STRING,
+    allowNull: true,
   },
   createdAt: DataTypes.DATE,
   updatedAt: DataTypes.DATE,

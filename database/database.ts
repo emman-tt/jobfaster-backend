@@ -6,6 +6,7 @@ import { Pointer } from "../models/pointer.js";
 import { Activity } from "../models/activity.js";
 import dotenv from "dotenv";
 import { Token } from "../models/token.js";
+import { Account, Verification } from "../models/better-auth.js";
 dotenv.config();
 
 export async function db() {
@@ -61,9 +62,15 @@ export async function db() {
     as: "activity",
   });
 
+  User.hasMany(Account, {
+    foreignKey: "userId",
+    onDelete: "CASCADE",
+  });
+  Account.belongsTo(User, { foreignKey: "userId" });
+
   try {
-    // sequelize.sync({alter:true});
+    // await sequelize.sync({ alter: true });
   } catch (error) {
-    console.log(error);
+    console.error(" Sync error:", error);
   }
 }
