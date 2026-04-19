@@ -7,6 +7,8 @@ import { GlobalErrorHandler } from "./utils/globalErrorHandler.js";
 import "./services/socket.js";
 import "./services/worker.js";
 import { auth } from "./services/better-auth.js";
+import { toNodeHandler } from "better-auth/node";
+
 const app = express();
 const PORT = 3000;
 
@@ -19,14 +21,17 @@ app.use(
   }),
 );
 
+
+
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
+app.use("/api/auth", toNodeHandler(auth));
 db();
 
 app.use("/api/v1", router);
-app.use(auth.handler);
+
 app.use(GlobalErrorHandler);
 
 app.listen(PORT, () => {

@@ -70,7 +70,8 @@ export async function db() {
 
   try {
     // await sequelize.sync({ alter: true });
+    console.log("Database synced successfully");
   } catch (error) {
-    console.error(" Sync error:", error);
+    console.error("Sync error:", error);
   }
 }

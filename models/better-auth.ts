@@ -28,8 +28,8 @@ export interface VerificationModel extends Model<InferAttributes<VerificationMod
 
 export const Account = sequelize.define<AccountModel>("ba_account", {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.STRING,
+    defaultValue: () => crypto.randomUUID(),
     primaryKey: true,
   },
   userId: {
@@ -56,16 +56,16 @@ export const Account = sequelize.define<AccountModel>("ba_account", {
 
 export const Verification = sequelize.define<VerificationModel>("ba_verification", {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.STRING,
+    defaultValue: () => crypto.randomUUID(),
     primaryKey: true,
   },
   identifier: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(500),
     allowNull: false,
   },
   value: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: false,
   },
   expiresAt: {

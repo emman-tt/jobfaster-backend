@@ -2,6 +2,8 @@ import { createAdapterFactory, type CustomAdapter } from "better-auth/adapters";
 import { User } from "../models/user.js";
 import { Token } from "../models/token.js";
 import { Account, Verification } from "../models/better-auth.js";
+import { sequelize } from "../database/pool.js";
+import { Op } from "sequelize";
 
 interface CustomAdapterConfig {
   usePlural?: boolean;
@@ -37,7 +39,7 @@ export const adapter = (config: CustomAdapterConfig = {}): CustomAdapter => {
       adapterName: "Sequelize",
       usePlural: config.usePlural ?? false,
       supportsNumericIds: false,
-      supportsJSON: false,
+      supportsJSON: true,
       supportsDates: true,
       supportsBooleans: true,
     },
@@ -47,6 +49,18 @@ export const adapter = (config: CustomAdapterConfig = {}): CustomAdapter => {
           const Model = getModel(model);
           
           if (model === "user") {
+            const existingUser = await Model.findOne({ 
+              where: { 
+                email: {
+                  [Op.iLike]: data.email
+                }
+              }
+            });
+            
+            if (existingUser) {
+              return select ? pick(existingUser.toJSON(), select) : existingUser.toJSON();
+            }
+            
             const userData = {
               email: data.email,
               name: data.name || data.email?.split('@')[0] || "User",
@@ -92,26 +106,71 @@ export const adapter = (config: CustomAdapterConfig = {}): CustomAdapter => {
         },
         delete: async ({ model, where }: any) => {
           const Model = getModel(model);
-          await Model.destroy({ where });
+          
+          let sequelizeWhere: any = where;
+          
+          if (Array.isArray(where) && where.length > 0 && 'field' in where[0]) {
+            sequelizeWhere = { [where[0].field]: where[0].value };
+          } else if (where && typeof where === 'object' && 'field' in where) {
+            sequelizeWhere = { [where.field]: where.value };
+          }
+          
+          await Model.destroy({ where: sequelizeWhere });
         },
         deleteMany: async ({ model, where }: any) => {
           const Model = getModel(model);
-          return Model.destroy({ where });
+          
+          let sequelizeWhere: any = where;
+          
+          if (Array.isArray(where) && where.length > 0 && 'field' in where[0]) {
+            sequelizeWhere = { [where[0].field]: where[0].value };
+          } else if (where && typeof where === 'object' && 'field' in where) {
+            sequelizeWhere = { [where.field]: where.value };
+          }
+          
+          return Model.destroy({ where: sequelizeWhere });
         },
         findOne: async ({ model, where, select }: any) => {
           const Model = getModel(model);
-          const result = await Model.findOne({ where });
+          
+          let sequelizeWhere: any = where;
+          
+          if (Array.isArray(where) && where.length > 0 && 'field' in where[0]) {
+            sequelizeWhere = { [where[0].field]: where[0].value };
+          } else if (where && typeof where === 'object' && 'field' in where) {
+            sequelizeWhere = { [where.field]: where.value };
+          }
+          
+          const result = await Model.findOne({ where: sequelizeWhere });
           if (!result) return null;
           return select ? pick(result.toJSON(), select) : result.toJSON();
         },
         findMany: async ({ model, where, limit, offset, select }: any) => {
           const Model = getModel(model);
-          const results = await Model.findAll({ where, limit, offset });
+          
+          let sequelizeWhere: any = where;
+          
+          if (Array.isArray(where) && where.length > 0 && 'field' in where[0]) {
+            sequelizeWhere = { [where[0].field]: where[0].value };
+          } else if (where && typeof where === 'object' && 'field' in where) {
+            sequelizeWhere = { [where.field]: where.value };
+          }
+          
+          const results = await Model.findAll({ where: sequelizeWhere, limit, offset });
           return results.map((r: any) => select ? pick(r.toJSON(), select) : r.toJSON());
         },
         count: async ({ model, where }: any) => {
           const Model = getModel(model);
-          return Model.count({ where });
+          
+          let sequelizeWhere: any = where;
+          
+          if (Array.isArray(where) && where.length > 0 && 'field' in where[0]) {
+            sequelizeWhere = { [where[0].field]: where[0].value };
+          } else if (where && typeof where === 'object' && 'field' in where) {
+            sequelizeWhere = { [where.field]: where.value };
+          }
+          
+          return Model.count({ where: sequelizeWhere });
         },
       };
     },
