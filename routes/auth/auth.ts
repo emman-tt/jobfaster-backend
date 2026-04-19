@@ -121,7 +121,7 @@ router.post("/oauth-to-jwt", async (req: Request, res: Response, next: NextFunct
       sameSite: "lax",
     });
 
-    return sendSuccess(res, undefined, undefined, "SUCCESS", accessToken);
+    return sendSuccess(res, undefined, undefined, "REFRESH_SUCCESS", accessToken);
   } catch (error) {
     console.error("OAuth to JWT error:", error);
     next(error);

@@ -1,4 +1,4 @@
-export const uploadResumePrompt = rawText => {
+export const uploadResumePrompt = (rawText: string) => {
   return `
 You are a resume parser. Extract all information from the raw resume text below and structure it into a clean JSON object.
 
@@ -76,5 +76,5 @@ Must be directly parseable by JSON.parse(). Start with { and end with }.
   ],
   "languages": []
 }
-`.trim()
-}
+`.trim();
+};

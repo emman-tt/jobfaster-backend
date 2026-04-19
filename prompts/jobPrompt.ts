@@ -1,7 +1,7 @@
-export const applyJobPrompt = data => {
-  const experience = data.experience ?? []
-  const skills = data.skills ?? []
-  const education = data.education ?? []
+export const applyJobPrompt = (data: any) => {
+  const experience = data.experience ?? [];
+  const skills = data.skills ?? [];
+  const education = data.education ?? [];
 
   return `
 You are a senior resume strategist and expert job application coach.
@@ -16,37 +16,45 @@ ${data.jobDescription}
 
 **Name:** ${data.name}
 **Title:** ${data.jobTitle}
-**Location:** ${data.location ?? ''}
-${data.showSummary && data.summary ? `\n**Summary:**\n${data.summary}` : ''}
+**Location:** ${data.location ?? ""}
+${data.showSummary && data.summary ? `\n**Summary:**\n${data.summary}` : ""}
 
 **Experience:**
 ${
   experience.length > 0
-    ? experience.map(exp => `
+    ? experience
+        .map(
+          (exp: any) => `
 - Company: ${exp.company}
   Role: ${exp.jobTitle}
-  Location: ${exp.location || 'Not specified'}
-  Dates: ${exp.startYear || '?'} - ${exp.endYear || 'Present'}
+  Location: ${exp.location || "Not specified"}
+  Dates: ${exp.startYear || "?"} - ${exp.endYear || "Present"}
   Bullets:
   ${
     exp.points?.length > 0
-      ? exp.points.map(p => `  • ${p}`).join('\n')
-      : '  (no bullets provided)'
+      ? exp.points.map((p:string) => `  • ${p}`).join("\n")
+      : "  (no bullets provided)"
   }
-`).join('\n')
-    : 'No experience provided.'
+`,
+        )
+        .join("\n")
+    : "No experience provided."
 }
 
 **Education:**
 ${
   education.length > 0
-    ? education.map(edu => `
-- ${edu.degree} | ${edu.instituition} (${edu.startYear ?? ''} - ${edu.endYear ?? ''})${edu.gpa ? ` | GPA: ${edu.gpa}` : ''}
-`).join('\n')
-    : 'No education provided.'
+    ? education
+        .map(
+          (edu:any) => `
+- ${edu.degree} | ${edu.instituition} (${edu.startYear ?? ""} - ${edu.endYear ?? ""})${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}
+`,
+        )
+        .join("\n")
+    : "No education provided."
 }
 
-**Skills:** ${skills.length > 0 ? skills.join(', ') : 'None listed'}
+**Skills:** ${skills.length > 0 ? skills.join(", ") : "None listed"}
 
 ## EMAIL DETAILS
 - Applicant Email: ${data.email}
@@ -54,9 +62,9 @@ ${
 - Role: ${data.job.title}
 - Company: ${data.job.company}
 - Source: ${data.job.source}
-- Hiring Manager: ${data.job.hiringManager?.length > 0 ? data.job.hiringManager : 'Unknown'}
-- Tone: ${data.job.tone === 'Formal' ? 'Formal and professional' : 'Confident but conversational'}
-- Cover Letter Attached: ${data.job.includeCoverLetter ? 'Yes' : 'No'}
+- Hiring Manager: ${data.job.hiringManager?.length > 0 ? data.job.hiringManager : "Unknown"}
+- Tone: ${data.job.tone === "Formal" ? "Formal and professional" : "Confident but conversational"}
+- Cover Letter Attached: ${data.job.includeCoverLetter ? "Yes" : "No"}
 
 ## TASK 1 — RESUME TAILORING RULES
 
@@ -86,7 +94,7 @@ ${
 
 5. **Sign-off** — Use "Best regards" for formal, "Best" for conversational. Applicant name only.
 
-6. **Attachment note** — "Please find my CV${data.job.includeCoverLetter ? ' and cover letter' : ''} attached."
+6. **Attachment note** — "Please find my CV${data.job.includeCoverLetter ? " and cover letter" : ""} attached."
 
 ## THINGS TO NEVER DO
 - Do not invent metrics not inferable from the original bullets
@@ -126,5 +134,5 @@ Do NOT include fullEmail — it will be assembled in code.
     "attachmentNote": ""
   }
 }
-`.trim()
-}
+`.trim();
+};

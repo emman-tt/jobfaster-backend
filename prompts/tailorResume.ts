@@ -1,7 +1,7 @@
-export const generateTailoringPrompt = data => {
-  const experience = data.experience ?? []
-  const skills = data.skills ?? []
-  const education = data.education ?? []
+export const generateTailoringPrompt = (data: any) => {
+  const experience = data.experience ?? [];
+  const skills = data.skills ?? [];
+  const education = data.education ?? [];
 
   return `
 You are a senior resume strategist. Tailor the resume below to the job description, optimizing for ATS match and recruiter impact.
@@ -13,29 +13,29 @@ ${data.jobDescription}
 
 **Name:** ${data.name}
 **Title:** ${data.jobTitle}
-**Location:** ${data.location ?? ''}
-${data.showSummary && data.summary ? `\n**Summary:**\n${data.summary}` : ''}
+**Location:** ${data.location ?? ""}
+${data.showSummary && data.summary ? `\n**Summary:**\n${data.summary}` : ""}
 
 **Experience:**
 ${
   experience.length > 0
     ? experience
         .map(
-          exp => `
+          (exp: any) => `
 - Company: ${exp.company}
   Role: ${exp.jobTitle}
-  Location: ${exp.location || 'Not specified'}
-  Dates: ${exp.startYear || '?'} - ${exp.endYear || 'Present'}
+  Location: ${exp.location || "Not specified"}
+  Dates: ${exp.startYear || "?"} - ${exp.endYear || "Present"}
   Bullets:
   ${
     exp.points?.length > 0
-      ? exp.points.map(p => `  • ${p}`).join('\n')
-      : '  (no bullets provided)'
+      ? exp.points.map((p: any) => `  • ${p}`).join("\n")
+      : "  (no bullets provided)"
   }
-`
+`,
         )
-        .join('\n')
-    : 'No experience provided.'
+        .join("\n")
+    : "No experience provided."
 }
 
 **Education:**
@@ -43,17 +43,17 @@ ${
   education.length > 0
     ? education
         .map(
-          edu => `
-- ${edu.degree} | ${edu.institution} (${edu.startYear ?? ''} - ${
-            edu.endYear ?? ''
-          })${edu.gpa ? ` | GPA: ${edu.gpa}` : ''}
-`
+          (edu: any) => `
+- ${edu.degree} | ${edu.institution} (${edu.startYear ?? ""} - ${
+            edu.endYear ?? ""
+          })${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}
+`,
         )
-        .join('\n')
-    : 'No education provided.'
+        .join("\n")
+    : "No education provided."
 }
 
-**Skills:** ${skills.length > 0 ? skills.join(', ') : 'None listed'}
+**Skills:** ${skills.length > 0 ? skills.join(", ") : "None listed"}
 
 ## TAILORING RULES
 
@@ -87,5 +87,5 @@ Return ONLY valid JSON. No explanation, no markdown fences. Start with { and end
     { "company": "", "jobTitle": "", "startYear": "", "endYear": "", "location": "", "points": [] }
   ]
 }
-`.trim()
-}
+`.trim();
+};
