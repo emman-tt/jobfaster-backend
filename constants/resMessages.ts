@@ -12,7 +12,8 @@ export type ErrorMessage =
   | "USER_EXISTS"
   | "INTERNAL_ERROR"
   | "NOT_FOUND"
-  | "NO_TOKEN";
+  | "NO_TOKEN"
+  | "JOBS_FETCH_ERROR";
 
 export type SuccessMessage =
   | "LOGIN_SUCCESS"
@@ -27,4 +28,6 @@ export type SuccessMessage =
   | "RESUME_UPDATED"
   | "RESUME_OPTIMIZED"
   | "FETCH_SUCCESS"
-  | "UPDATE SUCCESS";
+  | "UPDATE SUCCESS"
+  | "JOBS_FETCHED"
+  | "JOBS_FETCHED_AND_SAVED";

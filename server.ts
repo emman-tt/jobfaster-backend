@@ -8,9 +8,13 @@ import "./services/socket.js";
 import "./services/worker.js";
 import { auth } from "./services/better-auth.js";
 import { toNodeHandler } from "better-auth/node";
+import { fetchJobs } from "./controllers/Job/Jobs.js";
+import { Job } from "./models/job.js";
 
 const app = express();
 const PORT = 3000;
+
+// fetchJobs()
 
 app.use(
   cors({
@@ -20,9 +24,6 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   }),
 );
-
-
-
 
 app.use(cookieParser());
 app.use(express.json());
