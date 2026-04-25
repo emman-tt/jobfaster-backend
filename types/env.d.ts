@@ -12,6 +12,7 @@ declare namespace NodeJS {
     FRONTEND_URL: string;
     POSTGRES_MIGRATION_CONNECTION: string;
     POSTGRES_CONNECTION: string;
+    RAPID_API_KEY:string;
     DEVELOPMENT: "development" | "production" | "testing";
   }
 }

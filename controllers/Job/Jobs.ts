@@ -1,8 +1,10 @@
-import { NextFunction, Response,Request } from "express";
+import { NextFunction, Response, Request } from "express";
 import { Job } from "../../models/job";
 import { sendSuccess } from "../../utils/sendSuccess";
-import { sendError } from "../../utils/sendError";
+import dotenv from "dotenv";
+dotenv.config();
 
+const { RAPID_API_KEY } = process.env;
 
 export async function getJobs(req: Request, res: Response, next: NextFunction) {
   try {
@@ -12,7 +14,7 @@ export async function getJobs(req: Request, res: Response, next: NextFunction) {
     return sendSuccess(res, 200, "success", "JOBS_FETCHED", jobs);
   } catch (error) {
     console.error(error);
-    next(error)
+    next(error);
   }
 }
 
@@ -22,7 +24,7 @@ export async function fetchJobs() {
   const options = {
     method: "GET",
     headers: {
-      "x-rapidapi-key": "0fc665b46dmsh7217a451a41cceap17db42jsn3c33275226ef",
+      "x-rapidapi-key": RAPID_API_KEY,
       "x-rapidapi-host": "jsearch.p.rapidapi.com",
       "Content-Type": "application/json",
     },
@@ -41,7 +43,7 @@ export async function fetchJobs() {
         truncate: false,
       });
     }
-    
+
     for (const job of jobsData) {
       await Job.create({
         jobId: job.job_id,

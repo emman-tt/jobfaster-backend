@@ -14,7 +14,6 @@ import { Job } from "./models/job.js";
 const app = express();
 const PORT = 3000;
 
-// fetchJobs()
 
 app.use(
   cors({
