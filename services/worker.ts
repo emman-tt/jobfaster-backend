@@ -129,11 +129,6 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
     if (type === "JOB_APPLY") {
       return handleJobApply(response.response, "JOB_APPLY", job, data);
     }
-
-    if (type === "RESUME_UPLOAD") {
-      return handleResumeUpload(response.response, "RESUME_UPLOAD", job, data);
-    }
-
     return {
       status: false,
       type: type,
@@ -169,23 +164,7 @@ function handleJobApply(response: any, type: "JOB_APPLY", job: any, data: any) {
     message: response.message,
   };
 }
-function handleResumeUpload(
-  response: any,
-  type: "RESUME_UPLOAD",
-  job: any,
-  data: any,
-) {
-  // const use = parseResponse(response);
-  return {
-    status: true,
-    type: type,
-    jobId: job.token || 0,
-    response: response.data,
-    fileId: data.data.fileId,
-    timestamp: new Date().toISOString(),
-    message: response.message,
-  };
-}
+
 
 export const getAiQueue = () => aiQueue;
 export const getAiWorker = () => aiWorker;

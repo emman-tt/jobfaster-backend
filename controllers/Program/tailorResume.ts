@@ -26,15 +26,9 @@ export async function tailorResume(
 
     console.log(response);
 
-    sendSuccess(
-      res,
-      undefined,
-      undefined,
-      "Resume tailored succesfully for the job",
-      {
-        ...response,
-      },
-    );
+    sendSuccess(res, undefined, undefined, "RESUME_OPTIMIZED", {
+      ...response,
+    });
   } catch (error) {
     next(error);
   }
