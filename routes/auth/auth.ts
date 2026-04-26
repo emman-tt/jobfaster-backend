@@ -77,7 +77,9 @@ router.post("/oauth-to-jwt", async (req: Request, res: Response, next: NextFunct
       return sendError(res, "NO_TOKEN", 401, "failed");
     }
 
-    const user = await User.findByPk(session.user.id);
+    const user = await User.findByPk(session.user.id, {
+      attributes: ["id", "email", "name", "image"]
+    });
     
     if (!user) {
       return sendError(res, "USER_NOT_FOUND", 404, "failed");
@@ -92,6 +94,8 @@ router.post("/oauth-to-jwt", async (req: Request, res: Response, next: NextFunct
       "user"
     );
 
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 12 * 7);
+
     const existingToken = await Token.findOne({
       where: {
         userId: user.id,
@@ -103,6 +107,7 @@ router.post("/oauth-to-jwt", async (req: Request, res: Response, next: NextFunct
       await existingToken.update({
         token: refreshToken,
         lastUsed: new Date(),
+        expiresAt: expiresAt,
       });
     } else {
       await Token.create({
@@ -111,6 +116,7 @@ router.post("/oauth-to-jwt", async (req: Request, res: Response, next: NextFunct
         devicePrint: devicePrint,
         token: refreshToken,
         lastUsed: new Date(),
+        expiresAt: expiresAt,
       });
     }
 
@@ -123,7 +129,6 @@ router.post("/oauth-to-jwt", async (req: Request, res: Response, next: NextFunct
 
     return sendSuccess(res, undefined, undefined, "REFRESH_SUCCESS", accessToken);
   } catch (error) {
-    console.error("OAuth to JWT error:", error);
     next(error);
   }
 });

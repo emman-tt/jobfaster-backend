@@ -108,6 +108,7 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
   try {
     const response = await jobApply(JSON.stringify(data));
 
+    console.log("response", response);
     if (response.statusCode == 200 && type === "JOB_APPLY") {
       return handleJobApply(
         undefined,

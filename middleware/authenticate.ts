@@ -25,20 +25,17 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     if (!process.env.ACCESS_SECRET) {
       throw new Error("Access secret dont exist / wasnt provided");
     }
-    jwt.verify(
-      accessToken,
-      process.env.ACCESS_SECRET,
-      (err: any, decoded: any) => {
-        if (err?.name === "TokenExpiredError") {
-          return sendError(res, "ACCESS_TOKEN_EXPIRED", 401, "failed");
-        }
-
-        (req as any).user = decoded as userPayload;
-
-        next();
-      },
-    );
-  } catch (error) {
+    
+    const decoded = jwt.verify(accessToken, process.env.ACCESS_SECRET);
+    (req as any).user = decoded as userPayload;
+    next();
+  } catch (error: any) {
+    if (error.name === "TokenExpiredError") {
+      return sendError(res, "ACCESS_TOKEN_EXPIRED", 401, "failed");
+    }
+    if (error.name === "JsonWebTokenError") {
+      return sendError(res, "TOKEN_INVALID", 401, "failed");
+    }
     next(error);
   }
 }

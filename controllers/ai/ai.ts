@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { applyJobPrompt } from "../../prompts/jobPrompt";
+import { applyJobPromptUpload } from "../../prompts/jobPrompt";
 import { uploadResumePrompt } from "../../prompts/extractPrompt";
 import Groq from "groq-sdk";
 
@@ -38,9 +38,17 @@ async function callAi(prompt: string): Promise<Response> {
   }
 }
 
-export async function jobApply(data: string): Promise<Response> {
-  const promt = data;
-  return await callAi(data);
+interface ApplyJobData {
+  resumeText: string;
+  jobDescription: string;
+  tone: string;
+  includeCoverLetter: boolean;
+  hiringManager?: string;
+}
+
+export async function jobApply(data: ApplyJobData): Promise<Response> {
+  const promt = applyJobPromptUpload(data);
+  return await callAi(promt);
 }
 
 export async function talktoAi(

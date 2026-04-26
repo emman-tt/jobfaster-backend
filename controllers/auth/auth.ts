@@ -46,12 +46,15 @@ export async function register(
       "user",
     );
 
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 12 * 7);
+
     await Token.create({
       userId: user.dataValues.id,
       deviceName: deviceName,
       devicePrint: devicePrint,
       token: refreshToken,
       lastUsed: new Date(),
+      expiresAt: expiresAt,
     });
 
     res.cookie('refreshToken', refreshToken, {
@@ -101,6 +104,8 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
     const { deviceName, devicePrint } = fingerPrint(ua)
 
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 12 * 7);
+
     const existingToken = await Token.findOne({
       where: {
         userId: user.dataValues.id,
@@ -112,6 +117,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       await existingToken.update({
         token: refreshToken,
         lastUsed: new Date(),
+        expiresAt: expiresAt,
       });
     } else {
       await Token.create({
@@ -120,6 +126,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
         devicePrint: devicePrint,
         lastUsed: new Date(),
         token: refreshToken,
+        expiresAt: expiresAt,
       });
     }
 

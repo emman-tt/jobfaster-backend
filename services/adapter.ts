@@ -76,7 +76,7 @@ export const adapter = (config: CustomAdapterConfig = {}): CustomAdapter => {
             const sessionData = {
               userId: data.userId,
               token: data.token,
-              expiresAt: data.expiresAt,
+              expiresAt: new Date(data.expiresAt),
               deviceName: "Browser",
               devicePrint: "generated",
               lastUsed: new Date(),
@@ -95,13 +95,30 @@ export const adapter = (config: CustomAdapterConfig = {}): CustomAdapter => {
             update.lastUsed = new Date();
           }
           
-          const [count, updated] = await Model.update(update, { where, returning: true });
+          let sequelizeWhere: any = where;
+          
+          if (Array.isArray(where) && where.length > 0 && 'field' in where[0]) {
+            sequelizeWhere = { [where[0].field]: where[0].value };
+          } else if (where && typeof where === 'object' && 'field' in where) {
+            sequelizeWhere = { [where.field]: where.value };
+          }
+          
+          const [count, updated] = await Model.update(update, { where: sequelizeWhere, returning: true });
           if (count === 0) return null;
           return updated[0].toJSON();
         },
         updateMany: async ({ model, where, update }: any) => {
           const Model = getModel(model);
-          const [count] = await Model.update(update, { where });
+          
+          let sequelizeWhere: any = where;
+          
+          if (Array.isArray(where) && where.length > 0 && 'field' in where[0]) {
+            sequelizeWhere = { [where[0].field]: where[0].value };
+          } else if (where && typeof where === 'object' && 'field' in where) {
+            sequelizeWhere = { [where.field]: where.value };
+          }
+          
+          const [count] = await Model.update(update, { where: sequelizeWhere });
           return count;
         },
         delete: async ({ model, where }: any) => {
