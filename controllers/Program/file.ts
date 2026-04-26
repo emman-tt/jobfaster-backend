@@ -4,9 +4,9 @@ import { NextFunction, Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { sendSuccess } from "../../utils/sendSuccess";
 import dotenv from "dotenv";
-import { User } from "../../models/user";
+
 import { Pointer } from "../../models/pointer";
-import { UUIDV4 } from "sequelize";
+
 import { sequelize } from "../../database/pool";
 import { File } from "../../models/file";
 import { Activity } from "../../models/activity";
@@ -133,13 +133,3 @@ export async function uploadResume(
   }
 }
 
-async function Parse(file: Buffer) {
-  try {
-    const buffer = Buffer.from(file);
-    const parser = new PdfParse.SmartPDFParser();
-    const result = await parser.parse(buffer);
-    return result;
-  } catch (error) {
-    console.log(error);
-  }
-}

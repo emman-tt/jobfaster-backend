@@ -7,6 +7,8 @@ import {
 } from "./worker.js";
 import { WebSocket } from "ws";
 import { uploadResume } from "../controllers/Program/file.js";
+import { Parse } from "./pdfParsee.js";
+
 export const socket = new WebSocketServer({ port: 5000 });
 
 const clients = new Set<WebSocket>();
@@ -27,6 +29,8 @@ socket.on("connection", (ws: WebSocket) => {
     const parsed = JSON.parse(input);
     const { type, data } = parsed;
 
+    console.log(data, type);
+
     try {
       await connection.connect().catch((err) => {
         console.error("Failed to connect to Redis:", err);
@@ -35,19 +39,10 @@ socket.on("connection", (ws: WebSocket) => {
       if (!aiQueue) {
         throw new Error("Queue not initialized, Redis unavailable");
       }
+      const dataText = await ParseOnlinePdf(data.downloadUrl);
 
-      if (type === "RESUME_UPLOAD") {
-        const job = await aiQueue.add(type, {
-          data: data.file,
-          type: type,
-        });
-        console.log(` Job ${job.id} added to queue`);
-        return;
-      }
-
-      const job = await aiQueue.add(type, { data, type: type });
+      const job = await aiQueue.add(type, { dataText });
       console.log(` Job ${job.id} added to queue`);
-      // ws.send(JSON.stringify({ type: "queued", jobId: job.id }));
     } catch (error: any) {
       console.error("Failed to add job:", error);
       ws.send(
@@ -104,3 +99,15 @@ onWorkerReady((queue, worker) => {
     });
   });
 });
+
+async function ParseOnlinePdf(fileUrl: string): Promise<string | undefined> {
+  try {
+    const response = await fetch(fileUrl);
+    const buffer = await response.arrayBuffer();
+    const result = await Parse(buffer);
+    console.log(result?.text);
+    return result?.text;
+  } catch (error) {
+    console.log(error);
+  }
+}

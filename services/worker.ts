@@ -1,7 +1,7 @@
 import { Redis } from "ioredis";
 import dotenv from "dotenv";
 import { Queue, Worker } from "bullmq";
-import { talktoAi } from "../controllers/ai/ai";
+import { talktoAi, jobApply } from "../controllers/ai/ai";
 
 dotenv.config();
 
@@ -59,7 +59,7 @@ connection.on("error", (err) => {
 });
 
 connection.on("connect", async () => {
-  errorCount = 0; // Reset on successful connect
+  errorCount = 0;
   redisConnected = true;
   console.log("Connected to Redis, initializing worker and queue");
 
@@ -96,7 +96,8 @@ interface ProcessorResponse {
 }
 
 export async function Processor(job: any): Promise<ProcessorResponse> {
-  const { data, type } = job;
+  const { data } = job;
+  const type = job.name;
   const { fileId } = data;
 
   if (connection.status !== "ready") {
@@ -112,7 +113,7 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
   }
 
   try {
-    const response = await talktoAi(data.data, type);
+    const response = await jobApply(JSON.stringify(data));
 
     if (response.statusCode !== 200) {
       return {
@@ -120,7 +121,7 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
         type: type,
         jobId: job.token || 0,
         response: response.response || "",
-        fileId: data.data.fileId || 0,
+        fileId: fileId || 0,
         timestamp: new Date().toISOString(),
         message: response.message,
       };
@@ -134,7 +135,7 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
       type: type,
       jobId: job.token || 0,
       response: response.response || "",
-      fileId: data.data.fileId || 0,
+      fileId: fileId || 0,
       timestamp: new Date().toISOString(),
       message: response.message,
     };
@@ -159,12 +160,11 @@ function handleJobApply(response: any, type: "JOB_APPLY", job: any, data: any) {
     type: type,
     jobId: job.token || 0,
     response: use.data,
-    fileId: data.data.fileId,
+    fileId: data.fileId,
     timestamp: new Date().toISOString(),
     message: response.message,
   };
 }
-
 
 export const getAiQueue = () => aiQueue;
 export const getAiWorker = () => aiWorker;
