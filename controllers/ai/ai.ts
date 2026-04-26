@@ -37,7 +37,6 @@ async function callAi(prompt: string): Promise<Response> {
     };
   }
 }
-
 interface ApplyJobData {
   resumeText: string;
   jobDescription: string;
@@ -51,35 +50,3 @@ export async function jobApply(data: ApplyJobData): Promise<Response> {
   return await callAi(promt);
 }
 
-export async function talktoAi(
-  resumeData: string,
-  type: "JOB_APPLY" | "RESUME_UPLOAD",
-): Promise<Response> {
-  try {
-    const prompt =
-      type === "JOB_APPLY"
-        ? applyJobPrompt(resumeData)
-        : uploadResumePrompt(resumeData);
-
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_tokens: 4000,
-    });
-
-    const content = response.choices[0].message.content;
-    console.log(content);
-    return {
-      statusCode: 200,
-      response: content || "",
-      message: "AI responded successfully",
-    };
-  } catch (error: any) {
-    return {
-      statusCode: 500,
-      response: "",
-      message: error.message,
-    };
-  }
-}

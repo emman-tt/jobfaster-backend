@@ -29,7 +29,7 @@ socket.on("connection", (ws: WebSocket) => {
     const parsed = JSON.parse(input);
     const { type, data } = parsed;
 
-    console.log(data, type);
+    const resume = data.resume;
 
     try {
       await connection.connect().catch((err) => {
@@ -39,8 +39,18 @@ socket.on("connection", (ws: WebSocket) => {
       if (!aiQueue) {
         throw new Error("Queue not initialized, Redis unavailable");
       }
-      const dataText = await ParseOnlinePdf(data.downloadUrl);
-      const job = await aiQueue.add(type, { dataText });
+
+      const dataText = await ParseOnlinePdf(resume.downloadUrl);
+      const updatedData = {
+        jobDescription: data.jobDescription,
+        tone: data.tone,
+        includeCoverLetter: data.includeCoverLetter,
+        hiringEmail: data.hiringEmail,
+        resumeText: dataText,
+      };
+
+    
+      const job = await aiQueue.add(type, { updatedData });
       console.log(` Job ${job.id} added to queue`);
     } catch (error: any) {
       console.error("Failed to add job:", error);
@@ -104,7 +114,7 @@ async function ParseOnlinePdf(fileUrl: string): Promise<string | undefined> {
     const response = await fetch(fileUrl);
     const buffer = await response.arrayBuffer();
     const result = await Parse(buffer);
-    console.log(result?.text);
+
     return result?.text;
   } catch (error) {
     console.log(error);

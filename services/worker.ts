@@ -1,7 +1,7 @@
 import { Redis } from "ioredis";
 import dotenv from "dotenv";
 import { Queue, Worker } from "bullmq";
-import { talktoAi, jobApply } from "../controllers/ai/ai";
+import { jobApply } from "../controllers/ai/ai";
 import { response } from "express";
 
 dotenv.config();
@@ -96,19 +96,27 @@ interface ProcessorResponse {
   message: string;
 }
 
+interface ApplyJobData {
+  resumeText: string;
+  jobDescription: string;
+  tone: string;
+  includeCoverLetter: boolean;
+  hiringManager?: string;
+}
+
 export async function Processor(job: any): Promise<ProcessorResponse> {
   const { data } = job;
   const type = job.name;
-  // const { fileId } = data;
 
   if (connection.status !== "ready") {
     return handleError("failed", type, job, "Redis not conected", data);
   }
 
   try {
-    const response = await jobApply(JSON.stringify(data));
+    console.log("type", type);
+    console.log("data", data.updatedData);
+    const response = await jobApply(data.updatedData);
 
-    console.log("response", response);
     if (response.statusCode == 200 && type === "JOB_APPLY") {
       return handleJobApply(
         undefined,

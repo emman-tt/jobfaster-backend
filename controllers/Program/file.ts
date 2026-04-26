@@ -32,8 +32,104 @@ interface UploadResult {
   download: string;
 }
 
+// export async function saveEditorResume(
+//   req: Request,
+//   res: Response,
+//   next: NextFunction,
+// ) {
+//   const t = await sequelize.transaction();
+//   try {
+//     const file = req.file as any;
+//     const buffer = file.buffer;
+//     const decoded = req?.user;
 
+//     const uploadResult: any = await new Promise((resolve, reject) => {
+//       const uploadStream = cloudinary.uploader.upload_stream(
+//         {
+//           folder: "Jobfaster",
+//           resource_type: "auto",
+//           public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
+//         },
+//         (error, result) => {
+//           if (error) reject(error);
+//           else resolve(result);
+//         },
+//       );
+//       uploadStream.end(buffer);
+//     });
 
+//     const downloadUrl = uploadResult.secure_url.replace(
+//       "/upload/",
+//       "/upload/fl_attachment/",
+//     );
+
+//     const randomId = crypto.randomUUID().split("-")[0];
+//     const data: UploadResult = {
+//       id: randomId,
+//       type: "file",
+//       layoutId: null,
+//       source: "upload",
+//       extension: file.mimetype === "application/pdf" ? "pdf" : "docx",
+//       name: file.originalname,
+//       download: downloadUrl,
+//       size: file.size,
+//       content: uploadResult.secure_url,
+//       createdAt: new Date().toISOString(),
+//     };
+//     console.log(data);
+//     const userId = decoded?.sub as string;
+
+//     const id = uuidv4();
+
+//     await Pointer.create(
+//       {
+//         id: id,
+//         userId: userId,
+//         type: "FILE",
+//       },
+//       {
+//         transaction: t,
+//       },
+//     );
+
+//     await Activity.create(
+//       {
+//         message: `Uploaded a new file - ${data.name}.${data.extension}`,
+//         userId: userId,
+//         type: "FILE",
+//       },
+//       {
+//         transaction: t,
+//       },
+//     );
+
+//     await File.create(
+//       {
+//         id: id,
+//         source: "upload",
+//         metaData: {
+//           name: data.name,
+//           extension: data.extension,
+//           layoutId: null,
+//           size: data.size,
+//           content: data.content,
+//           downloadUrl: data.download,
+//         },
+//       },
+//       {
+//         transaction: t,
+//       },
+//     );
+
+//     await t.commit();
+
+//     return sendSuccess(res, 200, undefined, "UPLOAD_SUCCESS", data);
+//   } catch (error) {
+//     console.log(error);
+//     t.rollback();
+//     next(error);
+//   }
+// }
 export async function uploadResume(
   req: Request,
   res: Response,
@@ -78,7 +174,7 @@ export async function uploadResume(
       content: uploadResult.secure_url,
       createdAt: new Date().toISOString(),
     };
-    console.log(data);
+  
     const userId = decoded?.sub as string;
 
     const id = uuidv4();
@@ -132,4 +228,3 @@ export async function uploadResume(
     next(error);
   }
 }
-
