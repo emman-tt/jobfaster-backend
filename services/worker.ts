@@ -2,6 +2,7 @@ import { Redis } from "ioredis";
 import dotenv from "dotenv";
 import { Queue, Worker } from "bullmq";
 import { talktoAi, jobApply } from "../controllers/ai/ai";
+import { response } from "express";
 
 dotenv.config();
 
@@ -85,81 +86,75 @@ connection.on("connect", async () => {
 });
 
 interface ProcessorResponse {
-  status: boolean;
+  status: "success" | "failed";
   response: string;
   timestamp: string;
   jobId: string;
   fileId: string;
   rawData?: any;
-  type: "JOB_APPLY" | "RESUME_UPLOAD";
+  type: "JOB_APPLY";
   message: string;
 }
 
 export async function Processor(job: any): Promise<ProcessorResponse> {
   const { data } = job;
   const type = job.name;
-  const { fileId } = data;
+  // const { fileId } = data;
 
   if (connection.status !== "ready") {
-    return {
-      status: false,
-      type: type,
-      response: "Redis not connected",
-      timestamp: new Date().toISOString(),
-      jobId: job.token || 0,
-      fileId: fileId,
-      message: "Connection error",
-    };
+    return handleError("failed", type, job, "Redis not conected", data);
   }
 
   try {
     const response = await jobApply(JSON.stringify(data));
 
-    if (response.statusCode !== 200) {
-      return {
-        status: false,
-        type: type,
-        jobId: job.token || 0,
-        response: response.response || "",
-        fileId: fileId || 0,
-        timestamp: new Date().toISOString(),
-        message: response.message,
-      };
+    if (response.statusCode == 200 && type === "JOB_APPLY") {
+      return handleJobApply(
+        undefined,
+        response.response,
+        "JOB_APPLY",
+        job,
+        data,
+      );
     }
-
-    if (type === "JOB_APPLY") {
-      return handleJobApply(response.response, "JOB_APPLY", job, data);
-    }
-    return {
-      status: false,
-      type: type,
-      jobId: job.token || 0,
-      response: response.response || "",
-      fileId: fileId || 0,
-      timestamp: new Date().toISOString(),
-      message: response.message,
-    };
+    return handleError("failed", type, job, response, data);
   } catch (error) {
     console.log("error", error);
-    return {
-      status: false,
-      fileId: fileId,
-      type: type,
-      response: "Failed to process the cv",
-      timestamp: new Date().toISOString(),
-      jobId: job.token || 0,
-      message: " Message queuing  error",
-    };
+    return handleError("failed", type, job, response, data);
   }
 }
 
-function handleJobApply(response: any, type: "JOB_APPLY", job: any, data: any) {
+function handleJobApply(
+  status: "success" = "success",
+  response: any,
+  type: "JOB_APPLY",
+  job: any,
+  data: any,
+) {
   const use = parseResponse(response);
   return {
-    status: true,
+    status: status,
     type: type,
     jobId: job.token || 0,
     response: use.data,
+    fileId: data.fileId,
+    timestamp: new Date().toISOString(),
+    message: response.message,
+  };
+}
+
+function handleError(
+  status: "failed" = "failed",
+  type: "JOB_APPLY",
+  job: any,
+  response: any,
+  data: any,
+) {
+  return {
+    status: status,
+    type: type,
+    jobId: job.token || 0,
+    response: response.data,
     fileId: data.fileId,
     timestamp: new Date().toISOString(),
     message: response.message,

@@ -41,6 +41,8 @@ socket.on("connection", (ws: WebSocket) => {
       }
       const dataText = await ParseOnlinePdf(data.downloadUrl);
 
+     
+
       const job = await aiQueue.add(type, { dataText });
       console.log(` Job ${job.id} added to queue`);
     } catch (error: any) {
