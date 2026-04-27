@@ -3,7 +3,7 @@ import { Pointer } from "../../models/pointer";
 import { sendSuccess } from "../../utils/sendSuccess";
 import { File } from "../../models/file";
 import { Folder } from "../../models/folder";
-import { it } from "node:test";
+
 import { sendError } from "../../utils/sendError";
 import { sequelize } from "../../database/pool";
 import { Activity } from "../../models/activity";
