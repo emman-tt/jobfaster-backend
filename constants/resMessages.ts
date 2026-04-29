@@ -13,6 +13,7 @@ export type ErrorMessage =
   | "INTERNAL_ERROR"
   | "NOT_FOUND"
   | "NO_TOKEN"
+  | "EMAIL_ERROR"
   | "JOBS_FETCH_ERROR";
 
 export type SuccessMessage =
@@ -30,4 +31,5 @@ export type SuccessMessage =
   | "FETCH_SUCCESS"
   | "UPDATE SUCCESS"
   | "JOBS_FETCHED"
+  | "EMAIL_SUCCESS"
   | "JOBS_FETCHED_AND_SAVED";

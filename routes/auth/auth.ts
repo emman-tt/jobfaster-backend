@@ -65,72 +65,81 @@ function fingerPrint(ua: any) {
   };
 }
 
-router.post("/oauth-to-jwt", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const cookieHeader = req.headers.cookie;
-    
-    const session = await betterAuth.api.getSession({
-      headers: cookieHeader ? { cookie: cookieHeader } : {},
-    });
+router.post(
+  "/oauth-to-jwt",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const cookieHeader = req.headers.cookie;
 
-    if (!session?.user) {
-      return sendError(res, "NO_TOKEN", 401, "failed");
-    }
-
-    const user = await User.findByPk(session.user.id, {
-      attributes: ["id", "email", "name", "image"]
-    });
-    
-    if (!user) {
-      return sendError(res, "USER_NOT_FOUND", 404, "failed");
-    }
-
-    const parser = new UAParser();
-    const ua = parser.setUA(req.headers["user-agent"] as any).getResult();
-    const { deviceName, devicePrint } = fingerPrint(ua);
-
-    const { accessToken, refreshToken } = await generateToken(
-      user.id,
-      "user"
-    );
-
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 12 * 7);
-
-    const existingToken = await Token.findOne({
-      where: {
-        userId: user.id,
-        devicePrint: devicePrint,
-      },
-    });
-
-    if (existingToken) {
-      await existingToken.update({
-        token: refreshToken,
-        lastUsed: new Date(),
-        expiresAt: expiresAt,
+      const session = await betterAuth.api.getSession({
+        headers: cookieHeader ? { cookie: cookieHeader } : {},
       });
-    } else {
-      await Token.create({
-        userId: user.id,
-        deviceName: deviceName,
-        devicePrint: devicePrint,
-        token: refreshToken,
-        lastUsed: new Date(),
-        expiresAt: expiresAt,
+
+      if (!session?.user) {
+        return sendError(res, "NO_TOKEN", 401, "failed");
+      }
+
+      const user = await User.findByPk(session.user.id, {
+        attributes: ["id", "email", "name", "image"],
       });
+
+      if (!user) {
+        return sendError(res, "USER_NOT_FOUND", 404, "failed");
+      }
+
+      const parser = new UAParser();
+      const ua = parser.setUA(req.headers["user-agent"] as any).getResult();
+      const { deviceName, devicePrint } = fingerPrint(ua);
+
+      const { accessToken, refreshToken } = await generateToken(
+        user.id,
+        "user",
+      );
+
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 12 * 7);
+
+      const existingToken = await Token.findOne({
+        where: {
+          userId: user.id,
+          devicePrint: devicePrint,
+        },
+      });
+
+      if (existingToken) {
+        await existingToken.update({
+          token: refreshToken,
+          lastUsed: new Date(),
+          expiresAt: expiresAt,
+        });
+      } else {
+        await Token.create({
+          userId: user.id,
+          deviceName: deviceName,
+          devicePrint: devicePrint,
+          token: refreshToken,
+          lastUsed: new Date(),
+          expiresAt: expiresAt,
+        });
+      }
+
+      res.cookie("refreshToken", refreshToken, {
+        maxAge: 1000 * 60 * 60 * 12 * 7,
+        secure: DEVELOPMENT === "production",
+        httpOnly: true,
+        sameSite: "lax",
+      });
+
+      return sendSuccess(
+        res,
+        undefined,
+        undefined,
+        "REFRESH_SUCCESS",
+        accessToken,
+      );
+    } catch (error) {
+      next(error);
     }
-
-    res.cookie("refreshToken", refreshToken, {
-      maxAge: 1000 * 60 * 60 * 12 * 7,
-      secure: DEVELOPMENT === "production",
-      httpOnly: true,
-      sameSite: "lax",
-    });
-
-    return sendSuccess(res, undefined, undefined, "REFRESH_SUCCESS", accessToken);
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 export const authRouter = router;

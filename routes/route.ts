@@ -12,4 +12,5 @@ router.use("/ai", aiRouter);
 router.use("/activity", ActvityRouter);
 router.use("/job", jobRouter);
 
+
 export default router;

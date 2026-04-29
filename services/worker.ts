@@ -1,68 +1,56 @@
 import { Redis } from "ioredis";
-import dotenv from "dotenv";
+import { config } from "dotenv";
 import { Queue, Worker } from "bullmq";
 import { jobApply } from "../controllers/ai/ai";
-import { response } from "express";
 
-dotenv.config();
+config();
 
 const { REDIS_URL } = process.env;
+
+console.log("REDIS_URL:", REDIS_URL ? "set" : "NOT SET");
 
 if (!REDIS_URL) {
   throw new Error("Redis url env wasn't injected");
 }
 
-let errorCount = 0;
-let redisConnected = false;
 let aiQueue: Queue | null = null;
 let aiWorker: Worker | null = null;
+let redisReady = false;
 
 export const connection = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
-  retryDelayOnFailover: 300000,
-  tls: {},
-  connectTimeout: 10000,
-  enableOfflineQueue: false,
-  lazyConnect: true,
-  maxReconnectSteps: 2,
+  connectTimeout: 15000,
+  enableOfflineQueue: true,
+  lazyConnect: false,
+  tls: {
+    checkServerIdentity: () => undefined,
+  },
   retryStrategy: (times) => {
-    if (redisConnected === false && times > 3) {
-      console.log("Max retries reached, stopping reconnection attempts");
+    if (times > 30) {
+      console.log("Max Redis retries reached");
       return null;
     }
-    return Math.min(times * 100, 3000);
-  },
-  reconnectOnError: (err: any) => {
-    if (err.code === "ENOTFOUND") {
-      console.log("DNS error detected, skip reconnection");
-      return false;
-    }
-    return Number(err.message.split(" ")[0]) !== 1;
+    console.log(`Redis retry attempt ${times}`);
+    return Math.min(times * 500, 10000);
   },
 });
 
-connection.on("error", (err) => {
-  errorCount++;
-  console.error("Redis connection error:", err);
-  if (errorCount > 5 && redisConnected) {
-    console.log("Disconnecting Redis due to too many errors");
-    connection.disconnect();
-    redisConnected = false;
-    if (aiWorker) {
-      aiWorker.close().catch(console.error);
-      aiWorker = null;
-    }
-    if (aiQueue) {
-      aiQueue.close().catch(console.error);
-      aiQueue = null;
-    }
+connection.on("connecting", () => console.log("Redis connecting..."));
+connection.on("connect", () => console.log("Redis connected"));
+connection.on("ready", () => console.log("Redis ready"));
+connection.on("error", (err) => console.error("Redis error:", err.message));
+connection.on("close", () => {
+  console.log("Redis closed");
+  redisReady = false;
+});
+
+connection.on("ready", async () => {
+  if (redisReady && aiWorker && aiQueue) {
+    console.log("Already initialized");
+    return;
   }
-});
 
-connection.on("connect", async () => {
-  errorCount = 0;
-  redisConnected = true;
-  console.log("Connected to Redis, initializing worker and queue");
+  console.log("Redis ready, initializing queue and worker");
 
   if (!aiQueue) {
     aiQueue = new Queue("ai", {
@@ -80,9 +68,21 @@ connection.on("connect", async () => {
   if (!aiWorker) {
     aiWorker = new Worker("ai", Processor, {
       connection,
-      removeOnFail: undefined,
+      removeOnFail: { count: 100 },
+      removeOnComplete: { count: 100 },
+    });
+
+    aiWorker.on("error", (err) => {
+      console.error("Worker error:", err.message);
+    });
+
+    aiWorker.on("failed", (job, err) => {
+      console.error(`Job ${job.id} failed:`, err.message);
     });
   }
+
+  redisReady = true;
+  console.log("Queue and worker initialized");
 });
 
 interface ProcessorResponse {
@@ -92,32 +92,19 @@ interface ProcessorResponse {
   jobId: string;
   fileId: string;
   rawData?: any;
-  type: "JOB_APPLY";
+  type: "JOB_APPLY" | string;
   message: string;
-}
-
-interface ApplyJobData {
-  resumeText: string;
-  jobDescription: string;
-  tone: string;
-  includeCoverLetter: boolean;
-  hiringManager?: string;
 }
 
 export async function Processor(job: any): Promise<ProcessorResponse> {
   const { data } = job;
-  const type = job.name;
-
-  if (connection.status !== "ready") {
-    return handleError("failed", type, job, "Redis not conected", data);
-  }
+  const type = job.name as string;
 
   try {
-    console.log("type", type);
-    console.log("data", data.updatedData);
+    console.log("Processing job:", type);
     const response = await jobApply(data.updatedData);
 
-    if (response.statusCode == 200 && type === "JOB_APPLY") {
+    if (response.statusCode === 200 && type === "JOB_APPLY") {
       return handleJobApply(
         undefined,
         response.response,
@@ -126,10 +113,16 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
         data,
       );
     }
-    return handleError("failed", type, job, response, data);
-  } catch (error) {
-    console.log("error", error);
-    return handleError("failed", type, job, response, data);
+    return handleError("failed", "JOB_APPLY", job, response, data);
+  } catch (error: any) {
+    console.error("Job processing error:", error.message);
+    return handleError(
+      "failed",
+      "JOB_APPLY",
+      job,
+      { message: error.message },
+      data,
+    );
   }
 }
 
@@ -140,33 +133,33 @@ function handleJobApply(
   job: any,
   data: any,
 ) {
-  const use = parseResponse(response);
+  const parsed = parseResponse(response);
   return {
-    status: status,
-    type: type,
+    status,
+    type,
     jobId: job.token || 0,
-    response: use.data,
+    response: parsed.data,
     fileId: data.fileId,
     timestamp: new Date().toISOString(),
-    message: response.message,
+    message: response.message || "done",
   };
 }
 
 function handleError(
   status: "failed" = "failed",
-  type: "JOB_APPLY",
+  type: "JOB_APPLY" | string,
   job: any,
   response: any,
   data: any,
 ) {
   return {
-    status: status,
-    type: type,
+    status,
+    type,
     jobId: job.token || 0,
-    response: response.data,
-    fileId: data.fileId,
+    response: response?.data || null,
+    fileId: data?.fileId,
     timestamp: new Date().toISOString(),
-    message: response.message,
+    message: response?.message || "error",
   };
 }
 
@@ -208,16 +201,12 @@ const parseResponse = (rawResponse: any): ParsedData => {
     const parsed = JSON.parse(cleaned);
 
     if (!parsed.resume || !parsed.email) {
-      return {
-        success: false,
-        data: "invalid response generated",
-        raw: rawResponse,
-      };
+      return { success: false, data: "invalid response", raw: rawResponse };
     }
 
     return { success: true, data: parsed, raw: rawResponse };
   } catch (err) {
-    console.log(err);
-    return { success: false, data: "parsing error occured", raw: rawResponse };
+    console.error("Parse error:", err);
+    return { success: false, data: "parsing failed", raw: rawResponse };
   }
 };

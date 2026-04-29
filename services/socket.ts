@@ -27,15 +27,21 @@ socket.on("connection", (ws: WebSocket) => {
   ws.on("message", async (dataInput) => {
     const input = dataInput.toString();
     const parsed = JSON.parse(input);
-    const { type, data } = parsed;
+const { type, data } = parsed;
 
     const resume = data.resume;
 
     try {
-      await connection.connect().catch((err) => {
-        console.error("Failed to connect to Redis:", err);
-      });
-      const aiQueue = getAiQueue();
+      let aiQueue = getAiQueue();
+      let retries = 0;
+      
+      while (!aiQueue && retries < 30) {
+        await new Promise(r => setTimeout(r, 1000));
+        aiQueue = getAiQueue();
+        retries++;
+        console.log(`Waiting for Redis... attempt ${retries}`);
+      }
+
       if (!aiQueue) {
         throw new Error("Queue not initialized, Redis unavailable");
       }
@@ -49,11 +55,10 @@ socket.on("connection", (ws: WebSocket) => {
         resumeText: dataText,
       };
 
-    
       const job = await aiQueue.add(type, { updatedData });
-      console.log(` Job ${job.id} added to queue`);
+      console.log(`Job ${job.id} added to queue`);
     } catch (error: any) {
-      console.error("Failed to add job:", error);
+      console.error("Failed to add job:", error.message);
       ws.send(
         JSON.stringify({
           type: "JOB_APPLY",
