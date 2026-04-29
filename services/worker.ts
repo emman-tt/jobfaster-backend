@@ -2,6 +2,7 @@ import { Redis } from "ioredis";
 import { config } from "dotenv";
 import { Queue, Worker } from "bullmq";
 import { jobApply } from "../controllers/ai/ai";
+import { sendJobMail } from "../controllers/Mails/jobMail";
 
 config();
 
@@ -15,6 +16,8 @@ if (!REDIS_URL) {
 
 let aiQueue: Queue | null = null;
 let aiWorker: Worker | null = null;
+let mailQueue: Queue | null = null;
+let mailWorker: Worker | null = null;
 let redisReady = false;
 
 export const connection = new Redis(REDIS_URL, {
@@ -44,59 +47,59 @@ connection.on("close", () => {
   redisReady = false;
 });
 
-connection.on("ready", async () => {
-  if (redisReady && aiWorker && aiQueue) {
-    console.log("Already initialized");
-    return;
-  }
-
-  console.log("Redis ready, initializing queue and worker");
-
-  if (!aiQueue) {
-    aiQueue = new Queue("ai", {
-      connection,
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 3000,
-        },
-      },
-    });
-  }
-
-  if (!aiWorker) {
-    aiWorker = new Worker("ai", Processor, {
-      connection,
-      removeOnFail: { count: 100 },
-      removeOnComplete: { count: 100 },
-    });
-
-    aiWorker.on("error", (err) => {
-      console.error("Worker error:", err.message);
-    });
-
-    aiWorker.on("failed", (job, err) => {
-      console.error(`Job ${job.id} failed:`, err.message);
-    });
-  }
-
-  redisReady = true;
-  console.log("Queue and worker initialized");
-});
-
 interface ProcessorResponse {
   status: "success" | "failed";
   response: string;
   timestamp: string;
   jobId: string;
-  fileId: string;
+  fileId?: string;
   rawData?: any;
-  type: "JOB_APPLY" | string;
+  type: "JOB_APPLY" | "JOB_MAIL" | string;
   message: string;
 }
 
-export async function Processor(job: any): Promise<ProcessorResponse> {
+interface EmailInput {
+  to: string;
+  userName: string;
+  userEmail: string;
+  subject: string;
+  greeting: string;
+  body: string;
+  callToAction: string;
+  attachmentNote: string;
+  signOff: string;
+  pdfUrl: string;
+}
+
+export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
+  const data = job.data as EmailInput;
+  const type = job.name as string;
+
+  try {
+    console.log("Processing email job:", type);
+    const result = await sendJobMail({
+      ...data,
+    });
+
+    if (result.status == "failed") {
+      return handleError("failed", "JOB_APPLY", job, result.message, data);
+    }
+
+    return {
+      status: "success",
+      type: "JOB_MAIL",
+      jobId: job.token || 0,
+      response: result.data,
+      timestamp: new Date().toISOString(),
+      message: "Email sent successfully",
+    };
+  } catch (error: any) {
+    console.error("Email job processing error:", error);
+    return handleError("failed", "JOB_APPLY", job, error.message, data);
+  }
+}
+
+export async function AiProcessor(job: any): Promise<ProcessorResponse> {
   const { data } = job;
   const type = job.name as string;
 
@@ -115,14 +118,8 @@ export async function Processor(job: any): Promise<ProcessorResponse> {
     }
     return handleError("failed", "JOB_APPLY", job, response, data);
   } catch (error: any) {
-    console.error("Job processing error:", error.message);
-    return handleError(
-      "failed",
-      "JOB_APPLY",
-      job,
-      { message: error.message },
-      data,
-    );
+    console.error("Job processing error:", error);
+    return handleError("failed", "JOB_APPLY", job, error.message, data);
   }
 }
 
@@ -165,8 +162,100 @@ function handleError(
 
 export const getAiQueue = () => aiQueue;
 export const getAiWorker = () => aiWorker;
+export const getMailQueue = () => mailQueue;
+export const getMailWorker = () => mailWorker;
 
-export const onWorkerReady = (
+connection.on("ready", async () => {
+  if (redisReady && aiWorker && aiQueue && mailWorker && mailQueue) {
+    console.log("Already initialized");
+    return;
+  }
+
+  console.log("Redis ready, initializing queues and workers");
+
+  // AI queue
+  if (!aiQueue) {
+    aiQueue = new Queue("ai", {
+      connection,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 3000,
+        },
+      },
+    });
+  }
+
+  // Email queue
+  if (!mailQueue) {
+    mailQueue = new Queue("email", {
+      connection,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+      },
+    });
+  }
+
+  // AI worker
+  if (!aiWorker) {
+    aiWorker = new Worker("ai", AiProcessor, {
+      connection,
+      removeOnFail: { count: 100 },
+      removeOnComplete: { count: 100 },
+    });
+
+    aiWorker.on("error", (err) => {
+      console.error("AI Worker error:", err.message);
+    });
+
+    aiWorker.on("failed", (job, err) => {
+      console.error(`AI Job ${job?.id} failed:`, err.message);
+    });
+  }
+
+  // Email worker
+  if (!mailWorker) {
+    mailWorker = new Worker("email", EmailProcessor, {
+      connection,
+      removeOnFail: { count: 100 },
+      removeOnComplete: { count: 100 },
+    });
+
+    mailWorker.on("error", (err) => {
+      console.error("Email Worker error:", err.message);
+    });
+
+    mailWorker.on("failed", (job, err) => {
+      console.error(`Email Job ${job?.id} failed:`, err.message);
+    });
+  }
+
+  redisReady = true;
+  console.log("Queues and workers initialized");
+});
+
+export const onMailWorkerReady = (
+  callback: (queue: Queue, worker: Worker) => void,
+): (() => void) => {
+  if (mailQueue && mailWorker) {
+    callback(mailQueue, mailWorker);
+  }
+
+  const checkInterval = setInterval(() => {
+    if (mailQueue && mailWorker) {
+      clearInterval(checkInterval);
+      callback(mailQueue, mailWorker);
+    }
+  }, 100);
+
+  return () => clearInterval(checkInterval);
+};
+export const onAiWorkerReady = (
   callback: (queue: Queue, worker: Worker) => void,
 ): (() => void) => {
   if (aiQueue && aiWorker) {
