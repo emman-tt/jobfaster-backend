@@ -3,6 +3,7 @@ import { config } from "dotenv";
 import { Queue, Worker } from "bullmq";
 import { jobApply } from "../controllers/ai/ai";
 import { sendJobMail } from "../controllers/Mails/jobMail";
+import { logError } from "../utils/logger.js";
 
 config();
 
@@ -41,7 +42,9 @@ export const connection = new Redis(REDIS_URL, {
 connection.on("connecting", () => console.log("Redis connecting..."));
 connection.on("connect", () => console.log("Redis connected"));
 connection.on("ready", () => console.log("Redis ready"));
-connection.on("error", (err) => console.error("Redis error:", err.message));
+connection.on("error", (err) =>
+  logError(err, { file: "worker.ts", function: "connection", line: 44 }),
+);
 connection.on("close", () => {
   console.log("Redis closed");
   redisReady = false;
@@ -82,7 +85,7 @@ export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
     });
 
     if (result.status == "failed") {
-      return handleError("failed", "JOB_APPLY", job, result.message, data);
+      return handleError("failed", "JOB_MAIL", job, result, data);
     }
 
     return {
@@ -94,7 +97,11 @@ export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
       message: "Email sent successfully",
     };
   } catch (error: any) {
-    console.error("Email job processing error:", error);
+    logError(error, {
+      file: "worker.ts",
+      function: "EmailProcessor",
+      line: 97,
+    });
     return handleError("failed", "JOB_APPLY", job, error.message, data);
   }
 }
@@ -118,7 +125,7 @@ export async function AiProcessor(job: any): Promise<ProcessorResponse> {
     }
     return handleError("failed", "JOB_APPLY", job, response, data);
   } catch (error: any) {
-    console.error("Job processing error:", error);
+    logError(error, { file: "worker.ts", function: "AiProcessor", line: 121 });
     return handleError("failed", "JOB_APPLY", job, error.message, data);
   }
 }
@@ -153,7 +160,7 @@ function handleError(
     status,
     type,
     jobId: job.token || 0,
-    response: response?.data || null,
+    response:  response?.data || response  || null,
     fileId: data?.fileId,
     timestamp: new Date().toISOString(),
     message: response?.message || "error",
@@ -210,11 +217,19 @@ connection.on("ready", async () => {
     });
 
     aiWorker.on("error", (err) => {
-      console.error("AI Worker error:", err.message);
+      logError(err, {
+        file: "worker.ts",
+        function: "connection.on.ready",
+        line: 213,
+      });
     });
 
     aiWorker.on("failed", (job, err) => {
-      console.error(`AI Job ${job?.id} failed:`, err.message);
+      logError(err, {
+        file: "worker.ts",
+        function: "connection.on.ready",
+        line: 217,
+      });
     });
   }
 
@@ -227,11 +242,19 @@ connection.on("ready", async () => {
     });
 
     mailWorker.on("error", (err) => {
-      console.error("Email Worker error:", err.message);
+      logError(err, {
+        file: "worker.ts",
+        function: "connection.on.ready",
+        line: 230,
+      });
     });
 
     mailWorker.on("failed", (job, err) => {
-      console.error(`Email Job ${job?.id} failed:`, err.message);
+      logError(err, {
+        file: "worker.ts",
+        function: "connection.on.ready",
+        line: 234,
+      });
     });
   }
 
@@ -295,7 +318,11 @@ const parseResponse = (rawResponse: any): ParsedData => {
 
     return { success: true, data: parsed, raw: rawResponse };
   } catch (err) {
-    console.error("Parse error:", err);
+    logError(err as Error, {
+      file: "worker.ts",
+      function: "parseResponse",
+      line: 298,
+    });
     return { success: false, data: "parsing failed", raw: rawResponse };
   }
 };

@@ -64,6 +64,8 @@ export async function sendJobMail(input: MailOptions): Promise<MailResponse> {
       pdfUrl,
     } = input;
 
+    console.log("email data", input);
+
     const html = formatEmailHtml(
       greeting || "",
       body || "",
@@ -72,10 +74,10 @@ export async function sendJobMail(input: MailOptions): Promise<MailResponse> {
       signOff || "",
       userName || "",
     );
-
+    
     const { data, error } = await resend.emails.send({
-      from: `${userName} via JobFaster <applications@jobfaster.com>`,
-      to: [to],
+      from: `${userName} via JobFaster <applications@emmanverse.uk>`,
+      to: to,
       subject: subject,
       replyTo: userEmail,
       html,
@@ -83,7 +85,8 @@ export async function sendJobMail(input: MailOptions): Promise<MailResponse> {
         ? [
             {
               filename: "resume.pdf",
-              content: pdfUrl,
+              path:pdfUrl
+              
             },
           ]
         : undefined,
@@ -116,3 +119,12 @@ export async function sendJobMail(input: MailOptions): Promise<MailResponse> {
     };
   }
 }
+// Job 2 added to queue
+//  Job 2 started
+// Processing email job: JOB_MAIL
+// email error {
+//   statusCode: 422,
+//   name: 'validation_error',
+//   message: 'The `to` field must be a `string`.'
+// }
+//  Job 2 completed

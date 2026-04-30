@@ -11,6 +11,7 @@ import { WebSocket } from "ws";
 import { uploadResume } from "../controllers/Program/file.js";
 import { Parse } from "./pdfParsee.js";
 import { sendSocketError } from "../utils/sendSocketError.js";
+import { logError } from "../utils/logger.js";
 export const socket = new WebSocketServer({ port: 5000 });
 
 const clients = new Set<WebSocket>();
@@ -56,19 +57,12 @@ async function handleJobApply(
   ws: WebSocket,
 ) {
   const resume = data.resume;
+  const downloadUrl = resume?.downloadUrl;
+  const jobDescription = data.jobDescription;
+  const hiringEmail = data.hiringEmail;
 
-  if (
-    !resume ||
-    !data.resume.downloadUrl ||
-    data.jobDescription ||
-    !data.hiringEmail
-  ) {
-    return sendSocketError(
-      ws,
-      "VALIDATION_ERROR",
-      "FIELDS_ARE_MISSING",
-      "JOB_MAIL",
-    );
+  if (!resume || !downloadUrl || !jobDescription || !hiringEmail) {
+    return sendSocketError(ws, "VALIDATION_ERROR", "FIELDS_ARE_MISSING", type);
   }
 
   let aiQueue = getAiQueue();
@@ -114,6 +108,8 @@ async function handleJobMail(
     signOff,
     pdfUrl,
   } = data;
+
+  console.log(data);
   if (
     !to ||
     !userName ||
@@ -161,7 +157,7 @@ async function handleJobMail(
     throw new Error("Queue not initialized, Redis unavailable");
   }
 
-  const job = await mailQueue.add(type, { validatedData });
+  const job = await mailQueue.add(type, { ...validatedData });
   console.log(`Job ${job.id} added to queue`);
 }
 
@@ -189,7 +185,11 @@ onMailWorkerReady((queue, worker) => {
   });
 
   worker.on("failed", (job, error) => {
-    console.log(` Job ${job?.id} failed:`, error.message);
+    logError(error, {
+      file: "socket.ts",
+      function: "onMailWorkerReady",
+      line: 192,
+    });
     const message = JSON.stringify({
       status: "failed",
       jobId: job?.id,
@@ -227,7 +227,11 @@ onAiWorkerReady((queue, worker) => {
   });
 
   worker.on("failed", (job, error) => {
-    console.log(` Job ${job?.id} failed:`, error.message);
+    logError(error, {
+      file: "socket.ts",
+      function: "onAiWorkerReady",
+      line: 230,
+    });
     const message = JSON.stringify({
       status: "failed",
       jobId: job?.id,
@@ -250,6 +254,10 @@ async function ParseOnlinePdf(fileUrl: string): Promise<string | undefined> {
 
     return result?.text;
   } catch (error) {
-    console.log(error);
+    logError(error as Error, {
+      file: "socket.ts",
+      function: "ParseOnlinePdf",
+      line: 253,
+    });
   }
 }
