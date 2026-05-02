@@ -34,3 +34,4 @@ migrations/20260420231938-remove-jobbenefits-column.cjs
 migrations/20260420232639-add-employer-logo.cjs
 migrations/20260421000031-change-string-to-text.cjs
 migrations/20260421002518-remove-jobEmploymentTypeText.cjs
+migrations/20260501000000-create-user-jobs.cjs

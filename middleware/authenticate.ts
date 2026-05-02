@@ -25,7 +25,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     if (!process.env.ACCESS_SECRET) {
       throw new Error("Access secret dont exist / wasnt provided");
     }
-    
+
     const decoded = jwt.verify(accessToken, process.env.ACCESS_SECRET);
     (req as any).user = decoded as userPayload;
     next();
@@ -67,10 +67,8 @@ export async function RefreshAuth(
             token: refreshToken,
           },
         });
-
         return sendError(res, "REFRESH_TOKEN_EXPIRED", 401, "failed");
       }
-
       return sendError(res, "TOKEN_INVALID", 401, "failed");
     }
 

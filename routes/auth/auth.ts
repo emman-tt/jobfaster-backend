@@ -12,17 +12,41 @@ import { auth as betterAuth } from "../../services/better-auth";
 import { UAParser } from "ua-parser-js";
 import crypto from "crypto";
 import { sendSuccess } from "../../utils/sendSuccess";
-import dotenv from "dotenv";
-
-dotenv.config();
+import "dotenv/config";
 const { DEVELOPMENT } = process.env;
 
 const router = express.Router();
 
 const validateRegister = [
-  body("name").notEmpty().withMessage("Name is  required "),
-  body("email").notEmpty().isEmail().withMessage("Email is  required"),
-  body("password").notEmpty().withMessage("Password is required"),
+  body("name")
+    .notEmpty()
+    .withMessage("Name is  required ")
+    .isLength({ max: 150 })
+    .withMessage("Name is too long"),
+  body("email")
+    .notEmpty()
+    .trim()
+    .isEmail()
+    .withMessage("Email is  required")
+    .normalizeEmail({
+      gmail_remove_dots: false,
+      gmail_remove_subaddress: true,
+    }),
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .trim()
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+    )
+    .withMessage(
+      "Password must contain uppercase, lowercase, number, and special character",
+    )
+    .isLength({
+      min: 5,
+      max: 150,
+    })
+    .withMessage("Password characters must range between 5 to 150"),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

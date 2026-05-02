@@ -57,11 +57,11 @@ export async function register(
       expiresAt: expiresAt,
     });
 
-    res.cookie('refreshToken', refreshToken, {
+    res.cookie("refreshToken", refreshToken, {
       maxAge: 1000 * 60 * 60 * 12 * 7,
-      secure: DEVELOPMENT == 'production',
+      secure: DEVELOPMENT == "production",
       httpOnly: true,
-      sameSite: 'lax'
+      sameSite: "lax",
     });
     return sendSuccess(
       res,
@@ -99,10 +99,10 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
     const { accessToken, refreshToken } = await generateToken(
       user.dataValues.id,
-      'user',
-    )
+      "user",
+    );
 
-    const { deviceName, devicePrint } = fingerPrint(ua)
+    const { deviceName, devicePrint } = fingerPrint(ua);
 
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 12 * 7);
 
@@ -130,11 +130,11 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       });
     }
 
-    res.cookie('refreshToken', refreshToken, {
+    res.cookie("refreshToken", refreshToken, {
       maxAge: 1000 * 60 * 60 * 12 * 7,
-      secure: DEVELOPMENT == 'production',
+      secure: DEVELOPMENT == "production",
       httpOnly: true,
-      sameSite: 'lax'
+      sameSite: "lax",
     });
 
     return sendSuccess(res, undefined, undefined, "LOGIN_SUCCESS", accessToken);
@@ -173,21 +173,21 @@ async function hashPassword(password: string): Promise<string> {
 
 export async function logout(req: Request, res: Response, next: NextFunction) {
   try {
-    const refreshToken = req.cookies.refreshToken
-    
+    const refreshToken = req.cookies.refreshToken;
+
     if (refreshToken) {
       await Token.destroy({
         where: {
           token: refreshToken,
         },
-      })
+      });
     }
-    
-    res.clearCookie('refreshToken')
-    
-    return sendSuccess(res, undefined, 'success', 'LOGOUT_SUCCESS')
+
+    res.clearCookie("refreshToken");
+
+    return sendSuccess(res, undefined, "success", "LOGOUT_SUCCESS");
   } catch (error) {
-    console.error('Logout error:', error)
-    next(error)
+    console.error("Logout error:", error);
+    next(error);
   }
 }
