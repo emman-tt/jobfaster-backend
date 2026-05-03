@@ -14,6 +14,7 @@ interface FileModel extends Model<
   id: CreationOptional<string>;
   source: "upload" | "builder";
   folderId: string | null;
+  parsedContent: Record<string, any> | null;
   metaData: {
     name: string;
     extension: "pdf" | "docx";
@@ -35,6 +36,10 @@ export const File = sequelize.define<FileModel>("file", {
   },
   folderId: {
     type: DataTypes.UUID,
+    allowNull: true,
+  },
+  parsedContent: {
+    type: DataTypes.JSONB,
     allowNull: true,
   },
   metaData: {

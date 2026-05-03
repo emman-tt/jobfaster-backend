@@ -2,6 +2,28 @@ import { Response, Request, NextFunction } from "express";
 import { UserJob } from "../../models/user-jobs";
 import { sendSuccess } from "../../utils/sendSuccess";
 
+
+export async function getJobTrack(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const decoded = req.user;
+    const userId = decoded?.sub;
+
+    const userJobs = await UserJob.findAll({
+      where: {
+        userId,
+      },
+    });
+
+    sendSuccess(res, 200, "success", "JOBS_FETCHED", userJobs);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function saveJobTrack(
   req: Request,
   res: Response,
@@ -52,15 +74,27 @@ export async function updateJobTrack(
     const job = req.body?.job;
     const decoded = req.user;
     const userId = decoded?.sub;
+    const status = job.status;
+    const jobId = job.jobId;
 
-    const updateData = Object.fromEntries(
-      Object.entries(job).filter(([_, value]) => value !== undefined),
+    // const updateData = Object.fromEntries(
+    //   Object.entries(job).filter(([_, value]) => value !== undefined),
+    // );
+
+    // console.log(updateData);
+
+
+    await UserJob.update(
+      {
+        status: status,
+      },
+      { where: { userId: userId, id: jobId } },
     );
 
-    await UserJob.update(updateData, { where: { userId } });
 
     return sendSuccess(res, 200, "success", "JOB_UPDATED", null);
   } catch (error) {
+
     next(error);
   }
 }

@@ -56,12 +56,13 @@ async function handleJobApply(
   type: "JOB_APPLY" = "JOB_APPLY",
   ws: WebSocket,
 ) {
+  const fileId = data.fileId;
   const resume = data.resume;
   const downloadUrl = resume?.downloadUrl;
   const jobDescription = data.jobDescription;
   const hiringEmail = data.hiringEmail;
 
-  if (!resume || !downloadUrl || !jobDescription || !hiringEmail) {
+  if (!resume || !downloadUrl || !jobDescription || !hiringEmail || !fileId) {
     return sendSocketError(ws, "VALIDATION_ERROR", "FIELDS_ARE_MISSING", type);
   }
 
@@ -88,7 +89,13 @@ async function handleJobApply(
     resumeText: dataText,
   };
 
-  const job = await aiQueue.add(type, { updatedData });
+  const job = await aiQueue.add(
+    type,
+    { updatedData },
+    {
+      jobId: fileId,
+    },
+  );
   console.log(`Job ${job.id} added to queue`);
 }
 async function handleJobMail(

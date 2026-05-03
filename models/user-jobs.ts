@@ -14,7 +14,7 @@ interface JobModel extends Model<
   id: CreationOptional<string>;
   userId: string;
   jobId: string;
-  status: "applied" | "saved" | "rejected" | "offered";
+  status: "applied" | "saved" | "rejected" | "offered" | 'ongoing';
   jobTitle: string | null;
   employerName: string;
   employerLogo: string;

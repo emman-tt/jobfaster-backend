@@ -2,7 +2,7 @@ import express from "express";
 import { authenticate } from "../../middleware/authenticate";
 import { getJobs } from "../../controllers/Job/Jobs";
 import { sendJobMail } from "../../controllers/Mails/jobMail";
-import { saveJobTrack, updateJobTrack } from "../../controllers/Job/track";
+import { getJobTrack, saveJobTrack, updateJobTrack } from "../../controllers/Job/track";
 import { body, validationResult } from "express-validator";
 import { NextFunction, Request, Response } from "express";
 
@@ -23,11 +23,12 @@ const validateSaveJob = [
 const router = express.Router();
 
 router.get("/", authenticate, getJobs);
+router.get("/track", authenticate, getJobTrack);
 router.get("/:id", authenticate, getJobs);
 router.post("/mail", authenticate, sendJobMail);
 router.post("/track", authenticate, validateSaveJob, saveJobTrack);
 router.patch("/track", authenticate, updateJobTrack);
 router.delete("/track", authenticate);
-router.get("/track", authenticate);
+
 
 export const jobRouter = router;

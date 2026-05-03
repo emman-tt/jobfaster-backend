@@ -35,3 +35,4 @@ migrations/20260420232639-add-employer-logo.cjs
 migrations/20260421000031-change-string-to-text.cjs
 migrations/20260421002518-remove-jobEmploymentTypeText.cjs
 migrations/20260501000000-create-user-jobs.cjs
+migrations/20260503000000-add-parsedContent-to-files.cjs

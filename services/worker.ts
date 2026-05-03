@@ -4,6 +4,7 @@ import { Queue, Worker } from "bullmq";
 import { jobApply } from "../controllers/ai/ai";
 import { sendJobMail } from "../controllers/Mails/jobMail";
 import { logError } from "../utils/logger.js";
+import { File } from "../models/file";
 
 config();
 
@@ -109,9 +110,9 @@ export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
 export async function AiProcessor(job: any): Promise<ProcessorResponse> {
   const { data } = job;
   const type = job.name as string;
+  const fileId = job.id as string;
 
   try {
-    console.log("Processing job:", type);
     const response = await jobApply(data.updatedData);
 
     if (response.statusCode === 200 && type === "JOB_APPLY") {
@@ -121,6 +122,7 @@ export async function AiProcessor(job: any): Promise<ProcessorResponse> {
         "JOB_APPLY",
         job,
         data,
+        fileId,
       );
     }
     return handleError("failed", "JOB_APPLY", job, response, data);
@@ -130,14 +132,30 @@ export async function AiProcessor(job: any): Promise<ProcessorResponse> {
   }
 }
 
-function handleJobApply(
+async function handleJobApply(
   status: "success" = "success",
   response: any,
   type: "JOB_APPLY",
   job: any,
   data: any,
+  fileId: string,
 ) {
   const parsed = parseResponse(response);
+
+  const resumeJSON = parsed.data.resume;
+  console.log(parsed.data);
+  console.log(resumeJSON);
+  console.log(fileId);
+  await File.update(
+    {
+      parsedContent: resumeJSON,
+    },
+    {
+      where: {
+        id: fileId,
+      },
+    },
+  );
   return {
     status,
     type,
@@ -160,7 +178,7 @@ function handleError(
     status,
     type,
     jobId: job.token || 0,
-    response:  response?.data || response  || null,
+    response: response?.data || response || null,
     fileId: data?.fileId,
     timestamp: new Date().toISOString(),
     message: response?.message || "error",
