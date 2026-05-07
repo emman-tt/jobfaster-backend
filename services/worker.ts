@@ -5,9 +5,10 @@ import { jobApply } from "../controllers/ai/ai";
 import { sendJobMail } from "../controllers/Mails/jobMail";
 import { logError } from "../utils/logger.js";
 import { File } from "../models/file";
-import { Sequelize, sequelize } from "../models";
+import { sequelize } from "../database/pool";
 import { Activity } from "../models/activity";
-
+import { UserJob } from "../models/user-jobs";
+import { v4 as uuidv4 } from "uuid";
 config();
 
 const { REDIS_URL } = process.env;
@@ -33,7 +34,7 @@ export const connection = new Redis(REDIS_URL, {
     checkServerIdentity: () => undefined,
   },
   retryStrategy: (times) => {
-    if (times > 30) {
+    if (times > 10) {
       console.log("Max Redis retries reached");
       return null;
     }
@@ -77,6 +78,7 @@ interface EmailInput {
   pdfUrl: string;
   jobTitle: string;
   company: string;
+  jobDescription: string;
 }
 
 export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
@@ -84,7 +86,7 @@ export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
   const type = job.name as string;
   const userId = data.userId;
   const validatedData = data.validatedData as EmailInput;
-
+  const t = await sequelize.transaction();
   try {
     const result = await sendJobMail(validatedData);
 
@@ -92,12 +94,39 @@ export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
       return handleError("failed", "JOB_MAIL", job, result, data);
     }
 
-    console.log("result from mail", result);
-    Activity.create({
-      userId: userId,
-      message: `Applied for a job as ${validatedData.jobTitle} at ${validatedData.company}`,
-      type: "MAIL",
-    });
+    // console.log("result from mail", result);
+    await Activity.create(
+      {
+        userId: userId,
+        message: `Applied for a job as ${validatedData.jobTitle} at ${validatedData.company}`,
+        type: "MAIL",
+      },
+      {
+        transaction: t,
+      },
+    );
+
+    const newJobId = uuidv4();
+
+    await UserJob.create(
+      {
+        userId: userId,
+        jobId: newJobId,
+        status: "applied",
+        employerName: validatedData.company,
+        jobLocation: job.jobLocation,
+        jobTitle: validatedData.jobTitle,
+        jobEmploymentType: "unknown",
+        jobDescription: validatedData.jobDescription,
+        jobIsRemote: false,
+        jobHighlights: {},
+      },
+      {
+        transaction: t,
+      },
+    );
+
+    await t.commit();
 
     return {
       status: "success",
@@ -108,6 +137,7 @@ export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
       message: "Email sent successfully",
     };
   } catch (error: any) {
+    await t.rollback();
     logError(error, {
       file: "worker.ts",
       function: "EmailProcessor",

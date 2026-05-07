@@ -123,6 +123,7 @@ async function handleJobMail(
     pdfUrl,
     company,
     jobTitle,
+    jobDescription,
   } = data;
 
   if (
@@ -137,7 +138,8 @@ async function handleJobMail(
     !attachmentNote ||
     !callToAction ||
     !company ||
-    !jobTitle
+    !jobTitle ||
+    !jobDescription
   ) {
     return sendSocketError(
       ws,
@@ -160,6 +162,7 @@ async function handleJobMail(
     pdfUrl,
     company,
     jobTitle,
+    jobDescription,
   };
 
   let mailQueue = getMailQueue();

@@ -14,17 +14,17 @@ interface JobModel extends Model<
   id: CreationOptional<string>;
   userId: string;
   jobId: string;
-  status: "applied" | "saved" | "rejected" | "offered" | 'ongoing';
-  jobTitle: string | null;
-  employerName: string;
-  employerLogo: string;
-  employerWebsite: string;
-  jobPublisher: string;
-  jobApplyLink: string;
-  jobLocation: string;
-  jobCity: string;
-  jobState: string;
-  jobCountry: string;
+  status: "applied" | "saved" | "rejected" | "offered" | "ongoing";
+  jobTitle: string;
+  employerName: string | null;
+  employerLogo: string | null;
+  employerWebsite: string | null;
+  jobPublisher: string | null;
+  jobApplyLink: string | null;
+  jobLocation: string | null;
+  jobCity: string | null;
+  jobState: string | null;
+  jobCountry: string | null;
   jobEmploymentType: string;
   jobPostedHumanReadable: string | null;
   jobDescription: string;
@@ -34,6 +34,7 @@ interface JobModel extends Model<
   jobMinSalary: number | null;
   jobMaxSalary: number | null;
   jobSalaryPeriod: string | null;
+  fileId: string | null;
   jobHighlights: Record<string, string[]>;
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;
@@ -45,6 +46,10 @@ export const UserJob = sequelize.define<JobModel>("user_job", {
     defaultValue: DataTypes.UUIDV4,
     allowNull: false,
     primaryKey: true,
+  },
+  fileId: {
+    type: DataTypes.UUID,
+    allowNull: true,
   },
   userId: {
     type: DataTypes.UUID,
@@ -61,11 +66,11 @@ export const UserJob = sequelize.define<JobModel>("user_job", {
   },
   jobId: {
     type: DataTypes.STRING,
-    allowNull: true,
+    allowNull: false,
   },
   jobTitle: {
     type: DataTypes.STRING,
-    allowNull: true,
+    allowNull: false,
   },
   employerName: {
     type: DataTypes.STRING,
@@ -105,7 +110,7 @@ export const UserJob = sequelize.define<JobModel>("user_job", {
   },
   jobEmploymentType: {
     type: DataTypes.STRING,
-    allowNull: true,
+    allowNull: false,
   },
 
   jobPostedHumanReadable: {
@@ -114,11 +119,12 @@ export const UserJob = sequelize.define<JobModel>("user_job", {
   },
   jobDescription: {
     type: DataTypes.TEXT,
-    allowNull: true,
+    allowNull: false,
   },
   jobIsRemote: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
+    allowNull: false,
   },
   jobSalary: {
     type: DataTypes.STRING,
@@ -143,6 +149,7 @@ export const UserJob = sequelize.define<JobModel>("user_job", {
   jobHighlights: {
     type: DataTypes.JSONB,
     defaultValue: {},
+    allowNull: false,
   },
   createdAt: DataTypes.DATE,
   updatedAt: DataTypes.DATE,

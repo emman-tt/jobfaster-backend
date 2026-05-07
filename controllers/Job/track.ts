@@ -38,6 +38,7 @@ export async function saveJobTrack(
       status: "saved",
       jobId: job.jobId,
       jobTitle: job.jobTitle,
+      
       employerName: job.employerName,
       employerLogo: job.employerLogo || null,
       employerWebsite: job.employerWebsite || null,
