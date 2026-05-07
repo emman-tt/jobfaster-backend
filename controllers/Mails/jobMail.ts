@@ -119,12 +119,3 @@ export async function sendJobMail(input: MailOptions): Promise<MailResponse> {
     };
   }
 }
-// Job 2 added to queue
-//  Job 2 started
-// Processing email job: JOB_MAIL
-// email error {
-//   statusCode: 422,
-//   name: 'validation_error',
-//   message: 'The `to` field must be a `string`.'
-// }
-//  Job 2 completed

@@ -5,10 +5,7 @@ export async function GlobalErrorHandler(
   res: Response,
   err: any,
 ) {
-  // console.error(`[ERROR] ${req.method} ${req.url}`);
-  // console.error(`Message: ${err.message}`);
-  // console.error(err.stack);
-  console.log(err);
+  console.log(req);
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     status: "error",

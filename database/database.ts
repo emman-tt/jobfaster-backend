@@ -77,8 +77,8 @@ export async function db() {
   Account.belongsTo(User, { foreignKey: "userId" });
 
   try {
-    // await sequelize.sync({ alter: true });
-    console.log("Database synced successfully");
+    await sequelize.authenticate();
+    console.log("Database connected successfully");
   } catch (error) {
     console.error("Sync error:", error);
   }

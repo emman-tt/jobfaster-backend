@@ -9,6 +9,10 @@ const {
   FRONTEND_URL,
   DEVELOPMENT,
 } = process.env;
+
+
+
+
 export const auth = betterAuth({
   baseURL: BETTER_AUTH_URL,
   database: adapter(),

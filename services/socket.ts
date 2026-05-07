@@ -13,12 +13,19 @@ import { Parse } from "./pdfParsee.js";
 import { sendSocketError } from "../utils/sendSocketError.js";
 import { logError } from "../utils/logger.js";
 export const socket = new WebSocketServer({ port: 5000 });
+import { authenticateSocket } from "../middleware/authenticate.js";
+const clients = new Map<string, WebSocket>();
+import { Request } from "express";
+socket.on("connection", async (ws: WebSocket, req: Request) => {
+  const userId = authenticateSocket(req, ws);
 
-const clients = new Set<WebSocket>();
+  if (!userId) {
+    ws.close(1008, "Unauthorized");
+    return;
+  }
+  clients.set(userId, ws);
 
-socket.on("connection", (ws: WebSocket) => {
   console.log("Client connected");
-  clients.add(ws);
 
   ws.send(
     JSON.stringify({
@@ -34,11 +41,11 @@ socket.on("connection", (ws: WebSocket) => {
       const { type, data } = parsed;
 
       if (type == "JOB_APPLY") {
-        return handleJobApply(data, "JOB_APPLY", ws);
+        return handleJobApply(data, "JOB_APPLY", ws, userId);
       }
 
       if (type == "JOB_MAIL") {
-        return handleJobMail(data, "JOB_MAIL", ws);
+        return handleJobMail(data, "JOB_MAIL", ws, userId);
       }
     } catch (error: any) {
       sendSocketError(ws, error, error.message, "GENERAL_SOCKET_ERROR");
@@ -47,7 +54,7 @@ socket.on("connection", (ws: WebSocket) => {
 
   ws.on("close", () => {
     console.log("Client disconnected");
-    clients.delete(ws);
+    clients.delete(userId);
   });
 });
 
@@ -55,6 +62,7 @@ async function handleJobApply(
   data: any,
   type: "JOB_APPLY" = "JOB_APPLY",
   ws: WebSocket,
+  userId: string,
 ) {
   const fileId = data.fileId;
   const resume = data.resume;
@@ -89,19 +97,18 @@ async function handleJobApply(
     resumeText: dataText,
   };
 
-  const job = await aiQueue.add(
-    type,
-    { updatedData },
-    {
-      jobId: fileId,
-    },
-  );
+  const job = await aiQueue.add(type, {
+    updatedData: updatedData,
+    userId: userId,
+    fileId: fileId,
+  });
   console.log(`Job ${job.id} added to queue`);
 }
 async function handleJobMail(
   data: any,
   type: "JOB_MAIL" = "JOB_MAIL",
   ws: WebSocket,
+  userId: string,
 ) {
   const {
     to,
@@ -114,9 +121,10 @@ async function handleJobMail(
     attachmentNote,
     signOff,
     pdfUrl,
+    company,
+    jobTitle,
   } = data;
 
-  console.log(data);
   if (
     !to ||
     !userName ||
@@ -127,7 +135,9 @@ async function handleJobMail(
     !pdfUrl ||
     !signOff ||
     !attachmentNote ||
-    !callToAction
+    !callToAction ||
+    !company ||
+    !jobTitle
   ) {
     return sendSocketError(
       ws,
@@ -148,6 +158,8 @@ async function handleJobMail(
     attachmentNote,
     signOff,
     pdfUrl,
+    company,
+    jobTitle,
   };
 
   let mailQueue = getMailQueue();
@@ -164,31 +176,36 @@ async function handleJobMail(
     throw new Error("Queue not initialized, Redis unavailable");
   }
 
-  const job = await mailQueue.add(type, { ...validatedData });
+  const job = await mailQueue.add(type, {
+    validatedData: validatedData,
+    userId: userId,
+  });
+
   console.log(`Job ${job.id} added to queue`);
 }
 
 onMailWorkerReady((queue, worker) => {
   worker.on("completed", (job, result) => {
     console.log(` Job ${job.id} completed`);
+    const userId = job.data?.userId as string;
     const message = JSON.stringify(result);
 
-    clients.forEach((ws) => {
-      if (ws.readyState === ws.OPEN) {
-        ws.send(message);
-      }
-    });
+    const userWs = clients.get(userId);
+
+    if (userWs?.readyState === WebSocket.OPEN) {
+      userWs.send(message);
+    }
   });
 
   worker.on("active", (job) => {
     console.log(` Job ${job.id} started`);
     const message = JSON.stringify({ type: job.name, jobId: job.id });
+    const userId = job.data?.userId as string;
 
-    clients.forEach((ws) => {
-      if (ws.readyState === ws.OPEN) {
-        ws.send(message);
-      }
-    });
+    const userWs = clients.get(userId);
+    if (userWs?.readyState === WebSocket.OPEN) {
+      userWs.send(message);
+    }
   });
 
   worker.on("failed", (job, error) => {
@@ -202,12 +219,12 @@ onMailWorkerReady((queue, worker) => {
       jobId: job?.id,
       error: error.message,
     });
+    const userId = job?.data?.userId as string;
 
-    clients.forEach((ws: any) => {
-      if (ws.readyState === ws.OPEN) {
-        ws.send(message);
-      }
-    });
+    const userWs = clients.get(userId);
+    if (userWs?.readyState === WebSocket.OPEN) {
+      userWs.send(message);
+    }
   });
 });
 onAiWorkerReady((queue, worker) => {
@@ -215,22 +232,22 @@ onAiWorkerReady((queue, worker) => {
     console.log(` Job ${job.id} completed`);
     const message = JSON.stringify(result);
 
-    clients.forEach((ws) => {
-      if (ws.readyState === ws.OPEN) {
-        ws.send(message);
-      }
-    });
+    const userId = job.data?.userId as string;
+    const userWs = clients.get(userId);
+    if (userWs?.readyState === WebSocket.OPEN) {
+      userWs.send(message);
+    }
   });
 
   worker.on("active", (job) => {
     console.log(` Job ${job.id} started`);
     const message = JSON.stringify({ type: job.name, jobId: job.id });
 
-    clients.forEach((ws) => {
-      if (ws.readyState === ws.OPEN) {
-        ws.send(message);
-      }
-    });
+    const userId = job.data?.userId as string;
+    const userWs = clients.get(userId);
+    if (userWs?.readyState === WebSocket.OPEN) {
+      userWs.send(message);
+    }
   });
 
   worker.on("failed", (job, error) => {
@@ -245,11 +262,11 @@ onAiWorkerReady((queue, worker) => {
       error: error.message,
     });
 
-    clients.forEach((ws: any) => {
-      if (ws.readyState === ws.OPEN) {
-        ws.send(message);
-      }
-    });
+    const userId = job?.data?.userId as string;
+    const userWs = clients.get(userId);
+    if (userWs?.readyState === WebSocket.OPEN) {
+      userWs.send(message);
+    }
   });
 });
 

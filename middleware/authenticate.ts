@@ -2,18 +2,62 @@ import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { sendError } from "../utils/sendError";
 import { sendSuccess } from "../utils/sendSuccess";
-import dotenv from "dotenv";
-dotenv.config();
+import dotenv from "dotenv/config";
+import url from "url";
 import { UAParser } from "ua-parser-js";
 import crypto from "crypto";
 import { Token } from "../models/token";
-
+import WebSocket from "ws";
 export interface userPayload {
   sub: string;
   role: string;
   email?: string;
 }
 
+const { ACCESS_SECRET, REFRESH_SECRET, DEVELOPMENT } = process.env;
+
+export function authenticateSocket(req: Request, ws: WebSocket): string | null {
+  try {
+    const params = url.parse(req.url, true).query;
+    const accessToken = params.accessToken as string;
+
+    if (!accessToken) {
+      const message = JSON.stringify({
+        status: "failed",
+        error: "NO_ACCESS_TOKEN",
+      });
+      ws.send(message);
+      return null;
+    }
+    if (!ACCESS_SECRET) {
+      throw new Error("Access secret dont exist / wasnt provided");
+    }
+
+    const decoded = jwt.verify(accessToken, ACCESS_SECRET);
+    (req as any).user = decoded as userPayload;
+
+    return decoded.sub as string;
+  } catch (error: any) {
+    if (error.name === "TokenExpiredError") {
+      const message = JSON.stringify({
+        status: "failed",
+        error: "TOKEN_EXPIRED",
+      });
+      ws.send(message);
+      return null;
+    }
+    if (error.name === "JsonWebTokenError") {
+      const message = JSON.stringify({
+        status: "failed",
+        error: "INVALID_EXPIRED",
+      });
+      ws.send(message);
+      return null;
+    }
+
+    return null;
+  }
+}
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers["authorization"];
@@ -22,11 +66,11 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     if (!accessToken) {
       return sendError(res, "NO_TOKEN", 401, "failed");
     }
-    if (!process.env.ACCESS_SECRET) {
+    if (!ACCESS_SECRET) {
       throw new Error("Access secret dont exist / wasnt provided");
     }
 
-    const decoded = jwt.verify(accessToken, process.env.ACCESS_SECRET);
+    const decoded = jwt.verify(accessToken, ACCESS_SECRET);
     (req as any).user = decoded as userPayload;
     next();
   } catch (error: any) {
@@ -46,8 +90,8 @@ export async function RefreshAuth(
   next: NextFunction,
 ) {
   try {
-    const refreshSecret = process.env.REFRESH_SECRET;
-    const accessSecret = process.env.ACCESS_SECRET;
+    const refreshSecret = REFRESH_SECRET;
+    const accessSecret = ACCESS_SECRET;
     const refreshToken: string = req.cookies.refreshToken;
 
     if (!refreshToken) {
@@ -116,7 +160,7 @@ export async function RefreshAuth(
 
     res.cookie("accessToken", accessToken, {
       maxAge: 1000 * 60 * 15,
-      secure: process.env.DEVELOPMENT == "production",
+      secure: DEVELOPMENT == "production",
       httpOnly: true,
     });
 

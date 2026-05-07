@@ -5,6 +5,8 @@ import { jobApply } from "../controllers/ai/ai";
 import { sendJobMail } from "../controllers/Mails/jobMail";
 import { logError } from "../utils/logger.js";
 import { File } from "../models/file";
+import { Sequelize, sequelize } from "../models";
+import { Activity } from "../models/activity";
 
 config();
 
@@ -73,21 +75,29 @@ interface EmailInput {
   attachmentNote: string;
   signOff: string;
   pdfUrl: string;
+  jobTitle: string;
+  company: string;
 }
 
 export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
-  const data = job.data as EmailInput;
+  const { data } = job;
   const type = job.name as string;
+  const userId = data.userId;
+  const validatedData = data.validatedData as EmailInput;
 
   try {
-    console.log("Processing email job:", type);
-    const result = await sendJobMail({
-      ...data,
-    });
+    const result = await sendJobMail(validatedData);
 
     if (result.status == "failed") {
       return handleError("failed", "JOB_MAIL", job, result, data);
     }
+
+    console.log("result from mail", result);
+    Activity.create({
+      userId: userId,
+      message: `Applied for a job as ${validatedData.jobTitle} at ${validatedData.company}`,
+      type: "MAIL",
+    });
 
     return {
       status: "success",
@@ -101,7 +111,7 @@ export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
     logError(error, {
       file: "worker.ts",
       function: "EmailProcessor",
-      line: 97,
+      line: 100,
     });
     return handleError("failed", "JOB_APPLY", job, error.message, data);
   }
@@ -110,7 +120,11 @@ export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
 export async function AiProcessor(job: any): Promise<ProcessorResponse> {
   const { data } = job;
   const type = job.name as string;
-  const fileId = job.id as string;
+
+  const userId = data.userId as string;
+  const fileId = data.fileId;
+
+  console.log("userId", userId);
 
   try {
     const response = await jobApply(data.updatedData);
@@ -123,11 +137,12 @@ export async function AiProcessor(job: any): Promise<ProcessorResponse> {
         job,
         data,
         fileId,
+        userId,
       );
     }
     return handleError("failed", "JOB_APPLY", job, response, data);
   } catch (error: any) {
-    logError(error, { file: "worker.ts", function: "AiProcessor", line: 121 });
+    logError(error, { file: "worker.ts", function: "AiProcessor", line: 129 });
     return handleError("failed", "JOB_APPLY", job, error.message, data);
   }
 }
@@ -139,13 +154,11 @@ async function handleJobApply(
   job: any,
   data: any,
   fileId: string,
+  userId: string,
 ) {
   const parsed = parseResponse(response);
-
   const resumeJSON = parsed.data.resume;
-  console.log(parsed.data);
-  console.log(resumeJSON);
-  console.log(fileId);
+
   await File.update(
     {
       parsedContent: resumeJSON,
@@ -156,6 +169,15 @@ async function handleJobApply(
       },
     },
   );
+
+  const jobTitle = resumeJSON.personal.contactDetails.jobTitle;
+
+  await Activity.create({
+    type: "FILE",
+    message: `Generated a tailored resume generated for ${jobTitle} `,
+    userId: userId,
+  });
+
   return {
     status,
     type,

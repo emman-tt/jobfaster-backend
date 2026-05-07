@@ -62,7 +62,7 @@ You MUST choose ONE template that best matches the job description and resume. I
 
 ## TASK 2 — EMAIL WRITING RULES
 
-1. **Extract from job description** — Pull company name and job title. If not found use sensible defaults.
+1. **Extract from job description** — Pull the job title and company name and place them in email.jobTitle and email.companyName respectively. If not found, use sensible defaults like "Role" for jobTitle or "Company" for companyName.
 
 2. **Extract from resume** — Pull applicant full name, email, phone from raw resume text.
 
@@ -70,9 +70,9 @@ You MUST choose ONE template that best matches the job description and resume. I
 
 4. **Subject line** — Format: "Application for [Job Title] - [Full Name]"
 
-5. **Opening line** — State the role and source in one sentence. Do not open with "I am writing to..." or "My name is..."
+5. **Opening line** — State the role and source in one sentence. Must include the exact job title and company name (e.g., "I'm applying for the Senior Developer position at [Company Name]"). Do not open with "I am writing to..." or "My name is..."
 
-6. **Pitch paragraph** — 2-3 sentences max. Pull most relevant strengths from experience accomplishments. Tie directly to job description needs. No "I am passionate about..." phrases.
+6. **Pitch paragraph** — 2-3 sentences max. Pull most relevant strengths from experience accomplishments. Tie directly to job description needs. Reference the company by name. No "I am passionate about..." phrases.
 
 7. **Call to action** — One sentence. Express interest in discussing further. Do not beg or over-thank.
 
@@ -165,6 +165,8 @@ Do NOT include fullEmail — assembled in code.
     }
   },
   "email": {
+    "jobTitle": "",
+    "companyName": "",
     "subjectLine": "",
     "greeting": "",
     "body": "",
