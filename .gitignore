@@ -38,3 +38,4 @@ migrations/20260501000000-create-user-jobs.cjs
 migrations/20260503000000-add-parsedContent-to-files.cjs
 migrations/20260507000000-add-fileId-to-user-jobs.cjs
 migrations/20260507100000-update-user-jobs-allowNull.cjs
+migrations/20260509000000-create-settings.cjs

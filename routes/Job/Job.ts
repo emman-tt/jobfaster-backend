@@ -52,8 +52,6 @@ const router = express.Router();
 
 router.get("/", authenticate, getJobs);
 router.get("/track", authenticate, getJobTrack);
-// router.get("/:id", authenticate, getJobs);
-// router.post("/mail", authenticate, sendJobMail);
 router.post("/track", validateSaveJob, authenticate, saveJobTrack);
 router.patch("/track", validateUpdateJob, authenticate, updateJobTrack);
 router.delete("/track", validateDeleteJob, authenticate, deleteJobTrack);

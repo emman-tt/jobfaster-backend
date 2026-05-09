@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import { Token } from "../models/token.js";
 import { Account, Verification } from "../models/better-auth.js";
 import { UserJob } from "../models/user-jobs.js";
+import { Settings } from "../models/settings.js";
 dotenv.config();
 
 export async function db() {
@@ -63,6 +64,14 @@ export async function db() {
     as: "activity",
   });
   User.hasMany(UserJob, {
+    foreignKey: "userId",
+  });
+
+  User.hasOne(Settings, {
+    foreignKey: "userId",
+  });
+
+  Settings.belongsTo(User, {
     foreignKey: "userId",
   });
 

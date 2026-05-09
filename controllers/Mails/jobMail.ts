@@ -64,8 +64,7 @@ export async function sendJobMail(input: MailOptions): Promise<MailResponse> {
       pdfUrl,
     } = input;
 
-    console.log("email data", input);
-
+   
     const html = formatEmailHtml(
       greeting || "",
       body || "",
