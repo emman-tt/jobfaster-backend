@@ -3,15 +3,12 @@ import { v2 as cloudinary } from "cloudinary";
 import { NextFunction, Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { sendSuccess } from "../../utils/sendSuccess";
-import dotenv from "dotenv";
 
 import { Pointer } from "../../models/pointer";
 
 import { sequelize } from "../../database/pool";
 import { File } from "../../models/file";
 import { Activity } from "../../models/activity";
-
-dotenv.config();
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,

@@ -4,19 +4,113 @@ import { User } from "../../models/user";
 import bcrypt from "bcrypt";
 import { sendSuccess } from "../../utils/sendSuccess";
 import { generateToken } from "../../services/jwt";
-import dotenv from "dotenv";
 import { UAParser } from "ua-parser-js";
 import crypto from "crypto";
 import { Token } from "../../models/token";
+import { sequelize } from "../../database/pool";
+import { Sequelize } from "sequelize";
+import { Settings } from "../../models/settings";
 
-dotenv.config();
+import { auth as betterAuth } from "../../services/better-auth";
+
 const { DEVELOPMENT } = process.env;
+
+export async function handleBetterAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const cookieHeader = req.headers.cookie;
+
+    const session = await betterAuth.api.getSession({
+      headers: cookieHeader ? { cookie: cookieHeader } : {},
+    });
+
+    if (!session?.user) {
+      return sendError(res, "NO_TOKEN", 401, "failed");
+    }
+
+    const user = await User.findByPk(session.user.id, {
+      attributes: ["id", "email", "name", "image"],
+    });
+
+    if (!user) {
+      return sendError(res, "USER_NOT_FOUND", 404, "failed");
+    }
+
+    const parser = new UAParser();
+    const ua = parser.setUA(req.headers["user-agent"] as any).getResult();
+    const { deviceName, devicePrint } = fingerPrint(ua);
+
+    const { accessToken, refreshToken } = await generateToken(user.id, "user");
+
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 12 * 7);
+
+    const existingToken = await Token.findOne({
+      where: {
+        userId: user.id,
+        devicePrint: devicePrint,
+      },
+    });
+
+    if (existingToken) {
+      await existingToken.update({
+        token: refreshToken,
+        lastUsed: new Date(),
+        expiresAt: expiresAt,
+      });
+    } else {
+      await Token.create({
+        userId: user.id,
+        deviceName: deviceName,
+        devicePrint: devicePrint,
+        token: refreshToken,
+        lastUsed: new Date(),
+        expiresAt: expiresAt,
+      });
+    }
+
+    const settingsExist = await Settings.findOne({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!settingsExist) {
+      await Settings.create({
+        userId: user.id,
+        aiTailoringComplete: false,
+        jobEmailSendAlert: true,
+        newJobsAlert: true,
+      });
+    }
+
+    res.cookie("refreshToken", refreshToken, {
+      maxAge: 1000 * 60 * 60 * 12 * 7,
+      secure: DEVELOPMENT === "production",
+      httpOnly: true,
+      sameSite: "lax",
+    });
+
+    return sendSuccess(
+      res,
+      undefined,
+      undefined,
+      "REFRESH_SUCCESS",
+      accessToken,
+    );
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function register(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
+  const t = await sequelize.transaction();
   try {
     const { email, password, name } = req.body;
 
@@ -48,14 +142,33 @@ export async function register(
 
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 12 * 7);
 
-    await Token.create({
-      userId: user.dataValues.id,
-      deviceName: deviceName,
-      devicePrint: devicePrint,
-      token: refreshToken,
-      lastUsed: new Date(),
-      expiresAt: expiresAt,
-    });
+    await Token.create(
+      {
+        userId: user.dataValues.id,
+        deviceName: deviceName,
+        devicePrint: devicePrint,
+        token: refreshToken,
+        lastUsed: new Date(),
+        expiresAt: expiresAt,
+      },
+      {
+        transaction: t,
+      },
+    );
+
+    await Settings.create(
+      {
+        userId: user.dataValues.id,
+        jobEmailSendAlert: true,
+        newJobsAlert: true,
+        aiTailoringComplete: false,
+      },
+      {
+        transaction: t,
+      },
+    );
+
+    await t.commit();
 
     res.cookie("refreshToken", refreshToken, {
       maxAge: 1000 * 60 * 60 * 12 * 7,
@@ -71,10 +184,12 @@ export async function register(
       accessToken,
     );
   } catch (error) {
+    await t.rollback();
     console.log(error);
     next(error);
   }
 }
+
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, password } = req.body;

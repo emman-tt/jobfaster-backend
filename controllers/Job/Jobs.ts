@@ -1,8 +1,6 @@
 import { NextFunction, Response, Request } from "express";
 import { Job } from "../../models/job";
 import { sendSuccess } from "../../utils/sendSuccess";
-import dotenv from "dotenv";
-dotenv.config();
 
 const { RAPID_API_KEY } = process.env;
 

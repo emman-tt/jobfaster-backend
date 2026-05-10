@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 
 export async function GlobalErrorHandler(
+  err: any,
   req: Request,
   res: Response,
-  err: any,
+  next: NextFunction,
 ) {
-  console.log(req);
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     status: "error",

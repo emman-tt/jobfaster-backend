@@ -1,14 +1,12 @@
 import { NextFunction, Request, Response } from "express";
 import express from "express";
-import { login, register } from "../../controllers/auth/auth";
+import { handleBetterAuth, login, register } from "../../controllers/auth/auth";
 import { body, validationResult } from "express-validator";
 import { sendError } from "../../utils/sendError";
 import { RefreshAuth } from "../../middleware/authenticate";
 import { logout } from "../../controllers/auth/auth";
 import { generateToken } from "../../services/jwt";
-import { Token } from "../../models/token";
-import { User } from "../../models/user";
-import { auth as betterAuth } from "../../services/better-auth";
+
 import { UAParser } from "ua-parser-js";
 import crypto from "crypto";
 import { sendSuccess } from "../../utils/sendSuccess";
@@ -71,99 +69,8 @@ router.post("/register", validateRegister, register);
 router.post("/login", validateLogin, login);
 router.post("/refresh", RefreshAuth);
 router.post("/logout", logout);
+router.post("/oauth-to-jwt", handleBetterAuth);
 
-function fingerPrint(ua: any) {
-  const browser = ua.browser.name || "Browser";
-  const os = ua.os.name || "OS";
-  const device = `${browser} on ${os}`;
 
-  const fingerPrintString = `${browser}|${os}`;
-  const fingerPrintHash = crypto
-    .createHash("sha256")
-    .update(fingerPrintString)
-    .digest("hex");
-
-  return {
-    deviceName: device,
-    devicePrint: fingerPrintHash,
-  };
-}
-
-router.post(
-  "/oauth-to-jwt",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const cookieHeader = req.headers.cookie;
-
-      const session = await betterAuth.api.getSession({
-        headers: cookieHeader ? { cookie: cookieHeader } : {},
-      });
-
-      if (!session?.user) {
-        return sendError(res, "NO_TOKEN", 401, "failed");
-      }
-
-      const user = await User.findByPk(session.user.id, {
-        attributes: ["id", "email", "name", "image"],
-      });
-
-      if (!user) {
-        return sendError(res, "USER_NOT_FOUND", 404, "failed");
-      }
-
-      const parser = new UAParser();
-      const ua = parser.setUA(req.headers["user-agent"] as any).getResult();
-      const { deviceName, devicePrint } = fingerPrint(ua);
-
-      const { accessToken, refreshToken } = await generateToken(
-        user.id,
-        "user",
-      );
-
-      const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 12 * 7);
-
-      const existingToken = await Token.findOne({
-        where: {
-          userId: user.id,
-          devicePrint: devicePrint,
-        },
-      });
-
-      if (existingToken) {
-        await existingToken.update({
-          token: refreshToken,
-          lastUsed: new Date(),
-          expiresAt: expiresAt,
-        });
-      } else {
-        await Token.create({
-          userId: user.id,
-          deviceName: deviceName,
-          devicePrint: devicePrint,
-          token: refreshToken,
-          lastUsed: new Date(),
-          expiresAt: expiresAt,
-        });
-      }
-
-      res.cookie("refreshToken", refreshToken, {
-        maxAge: 1000 * 60 * 60 * 12 * 7,
-        secure: DEVELOPMENT === "production",
-        httpOnly: true,
-        sameSite: "lax",
-      });
-
-      return sendSuccess(
-        res,
-        undefined,
-        undefined,
-        "REFRESH_SUCCESS",
-        accessToken,
-      );
-    } catch (error) {
-      next(error);
-    }
-  },
-);
 
 export const authRouter = router;

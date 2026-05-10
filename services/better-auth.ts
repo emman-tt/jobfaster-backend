@@ -1,7 +1,5 @@
 import { betterAuth } from "better-auth";
 import { adapter } from "./adapter.js";
-import dotenv from "dotenv";
-dotenv.config();
 const {
   BETTER_AUTH_URL,
   GOOGLE_CLIENT_ID,
