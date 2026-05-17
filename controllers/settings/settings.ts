@@ -30,7 +30,7 @@ export async function FetchSettingsData(
   }
 }
 
-export async function UpdateSettings(
+export async function UpdateNotifications(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -38,6 +38,34 @@ export async function UpdateSettings(
   try {
     const decoded = req.user;
     const userId = decoded?.sub;
+
+    const inputBody = req.body;
+
+    const allowedFields = [
+      "newJobsAlert",
+      "aiTailoringComplete",
+      "jobEmailSendAlert",
+    ];
+
+    const updates: Record<string, boolean> = {};
+
+    for (const field of allowedFields) {
+      if (inputBody[field] !== undefined) {
+        updates[field] = inputBody[field];
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: "No valid fields to update" });
+    }
+
+    await Settings.update(updates, {
+      where: {
+        userId: userId,
+      },
+    });
+
+    sendSuccess(res, undefined, undefined, "UPDATE SUCCESS");
   } catch (error) {
     next(error);
   }

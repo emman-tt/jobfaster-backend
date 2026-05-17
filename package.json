@@ -53,7 +53,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "dev": "tsx watch server.ts",
+    "dev": "NODE_OPTIONS=--no-deprecation tsx watch server.ts",
     "build": "tsc",
     "start": " server.ts",
     "lint": "tsc --project tsconfig.json --noEmit"

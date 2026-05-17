@@ -12,6 +12,8 @@ import { toNodeHandler } from "better-auth/node";
 const app = express();
 const PORT = 3000;
 
+app.set("etag", false);
+
 app.use(
   cors({
     origin: ["http://localhost:5173"],
