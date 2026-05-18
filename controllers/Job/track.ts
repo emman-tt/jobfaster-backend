@@ -38,7 +38,7 @@ export async function saveJobTrack(
       status: "saved",
       jobId: job.jobId,
       jobTitle: job.jobTitle,
-      
+
       employerName: job.employerName,
       employerLogo: job.employerLogo || null,
       employerWebsite: job.employerWebsite || null,
@@ -98,10 +98,12 @@ export async function deleteJobTrack(
   try {
     const decoded = req.user;
     const userId = decoded?.sub;
+    const jobId = req.body.job?.jobId;
 
     await UserJob.destroy({
       where: {
         userId: userId,
+        id: jobId,
       },
     });
 

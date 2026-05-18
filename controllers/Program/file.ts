@@ -61,7 +61,7 @@ export async function uploadResume(
       "/upload/fl_attachment/",
     );
 
-    const randomId = crypto.randomUUID().split("-")[0];
+    const randomId = uuidv4().split("-")[0];
     const data: UploadResult = {
       id: randomId,
       type: "file",

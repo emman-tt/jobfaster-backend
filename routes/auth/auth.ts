@@ -1,6 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import express from "express";
 import { handleBetterAuth, login, register } from "../../controllers/auth/auth";
+import {
+  forgotPassword,
+  resetPassword,
+} from "../../controllers/auth/passwordReset";
 import { body, validationResult } from "express-validator";
 import { sendError } from "../../utils/sendError";
 import { RefreshAuth } from "../../middleware/authenticate";
@@ -65,12 +69,24 @@ const validateLogin = [
   },
 ];
 
+const validateResetEmail = [
+  body("email")
+    .notEmpty()
+    .trim()
+    .isEmail()
+    .withMessage("Email is  required")
+    .normalizeEmail({
+      gmail_remove_dots: false,
+      gmail_remove_subaddress: true,
+    }),
+];
+
 router.post("/register", validateRegister, register);
 router.post("/login", validateLogin, login);
 router.post("/refresh", RefreshAuth);
 router.post("/logout", logout);
 router.post("/oauth-to-jwt", handleBetterAuth);
-
-
+router.post("/forgot-password", validateResetEmail, forgotPassword);
+router.post("/reset-password", resetPassword);
 
 export const authRouter = router;

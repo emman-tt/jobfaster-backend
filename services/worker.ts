@@ -25,14 +25,14 @@ let mailWorker: Worker | null = null;
 export const connection = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
   connectTimeout: 15000,
-  enableOfflineQueue: false,
+  enableOfflineQueue: true,
   tls: {
     checkServerIdentity: () => undefined,
   },
   retryStrategy: (times) => {
-    if (times > 2) {
-      console.log(`Redis unreachable after ${times} attempts, failing`);
-      return null;
+    if (times > 4) {
+      console.log(`Redis unreachable after ${times} attempts, retrying every 30s`);
+      return 30000;
     }
     console.log(`Redis retry attempt ${times}`);
     return Math.min(times * 1000, 5000);

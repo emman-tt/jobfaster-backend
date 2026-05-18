@@ -15,7 +15,8 @@ export type ErrorMessage =
   | "NO_TOKEN"
   | "JOB_DELETED"
   | "EMAIL_ERROR"
-  | "JOBS_FETCH_ERROR";
+  | "JOBS_FETCH_ERROR"
+  | "SOCIAL_ACCOUNT";
 
 export type SuccessMessage =
   | "LOGIN_SUCCESS"

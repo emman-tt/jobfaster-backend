@@ -18,6 +18,8 @@ interface UserModel extends Model<
   email: string;
   emailVerified: CreationOptional<boolean>;
   image: CreationOptional<string>;
+  resetToken: CreationOptional<string | null>;
+  resetTokenExpires: CreationOptional<Date | null>;
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;
 }
@@ -47,6 +49,14 @@ export const User = sequelize.define<UserModel>("user", {
   },
   image: {
     type: DataTypes.STRING,
+    allowNull: true,
+  },
+  resetToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  resetTokenExpires: {
+    type: DataTypes.DATE,
     allowNull: true,
   },
   createdAt: DataTypes.DATE,

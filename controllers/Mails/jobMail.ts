@@ -75,7 +75,7 @@ export async function sendJobMail(input: MailOptions): Promise<MailResponse> {
     );
     
     const { data, error } = await resend.emails.send({
-      from: `${userName} via JobFaster <applications@emmanverse.uk>`,
+      from: `${userName} <applications@emmanverse.uk>`,
       to: to,
       subject: subject,
       replyTo: userEmail,

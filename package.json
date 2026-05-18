@@ -55,7 +55,7 @@
   "scripts": {
     "dev": "NODE_OPTIONS=--no-deprecation tsx watch server.ts",
     "build": "tsc",
-    "start": " server.ts",
+    "start": "tsx server.ts",
     "lint": "tsc --project tsconfig.json --noEmit"
   },
   "author": "Emmanuel Acquah",
