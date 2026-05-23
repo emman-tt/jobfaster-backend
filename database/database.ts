@@ -8,6 +8,9 @@ import { Token } from "../models/token.js";
 import { Account, Verification } from "../models/better-auth.js";
 import { UserJob } from "../models/user-jobs.js";
 import { Settings } from "../models/settings.js";
+import { Subscription } from "../models/subscription.js";
+import { Plan } from "../models/plans.js";
+import { Transaction } from "../models/transaction.js";
 
 export async function db() {
   User.hasMany(Pointer, {
@@ -67,7 +70,6 @@ export async function db() {
 
   User.hasOne(Settings, {
     foreignKey: "userId",
-    
   });
 
   Settings.belongsTo(User, {
@@ -83,6 +85,38 @@ export async function db() {
     onDelete: "CASCADE",
   });
   Account.belongsTo(User, { foreignKey: "userId" });
+
+  User.hasMany(Subscription, {
+    foreignKey: "userId",
+    onDelete: "CASCADE",
+  });
+  Subscription.belongsTo(User, {
+    foreignKey: "userId",
+  });
+
+  Plan.hasMany(Subscription, {
+    foreignKey: "planId",
+    onDelete: "CASCADE",
+  });
+  Subscription.belongsTo(Plan, {
+    foreignKey: "planId",
+  });
+
+  User.hasMany(Transaction, {
+    foreignKey: "userId",
+    onDelete: "CASCADE",
+  });
+  Transaction.belongsTo(User, {
+    foreignKey: "userId",
+  });
+
+  Subscription.hasMany(Transaction, {
+    foreignKey: "subscriptionId",
+    onDelete: "SET NULL",
+  });
+  Transaction.belongsTo(Subscription, {
+    foreignKey: "subscriptionId",
+  });
 
   try {
     await sequelize.authenticate();

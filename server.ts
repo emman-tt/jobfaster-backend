@@ -8,6 +8,7 @@ import "./services/socket.js";
 import "./services/worker.js";
 import { auth } from "./services/better-auth.js";
 import { toNodeHandler } from "better-auth/node";
+import "./services/payment.js";
 
 const app = express();
 const PORT = 3000;
