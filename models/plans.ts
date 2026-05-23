@@ -14,6 +14,7 @@ interface PlanModel extends Model<
   id: CreationOptional<string>;
   name: string;
   displayName: string;
+  variantId: "free" | "monthly_pro" | "monthly_premium";
   priceMonthly: number;
   priceYearly: number;
   maxResumeUploads: number;
@@ -43,6 +44,12 @@ export const Plan = sequelize.define<PlanModel>(
     displayName: {
       type: DataTypes.STRING(50),
       allowNull: false,
+    },
+    variantId: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      unique: true,
+      field: "variant_id",
     },
     priceMonthly: {
       type: DataTypes.INTEGER,

@@ -5,6 +5,7 @@ import { ActvityRouter } from "./Activity/Activity";
 import { jobRouter } from "./Job/Job";
 import { userRouter } from "./User/user";
 import { SettingsRouter } from "./Setting/settings";
+import { PlansRouter } from "./Plans/plans";
 const router = express.Router();
 
 router.use("/auth", authRouter);
@@ -13,5 +14,6 @@ router.use("/activity", ActvityRouter);
 router.use("/job", jobRouter);
 router.use("/user", userRouter);
 router.use("/settings", SettingsRouter);
+router.use("/plans", PlansRouter);
 
 export default router;

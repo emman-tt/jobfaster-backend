@@ -17,3 +17,14 @@ if (error) {
 } else {
   console.log(data);
 }
+
+export const lemonSqueezyConfig = {
+  apiKey: LEMON_SQUEEZY_API,
+  getHeaders() {
+    return {
+      Accept: "application/vnd.api+json",
+      "Content-Type": "application/vnd.api+json",
+      Authorization: `Bearer ${this.apiKey}`,
+    };
+  },
+};

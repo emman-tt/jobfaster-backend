@@ -19,8 +19,9 @@ declare namespace NodeJS {
     POSTGRES_CONNECTION: string;
     RAPID_API_KEY: string;
     EMAIL_SERVICE: string;
-    PRO_PLAN: string;
-    PREMIUM_PLAN: string;
+    PRO_PLAN_ID: string;
+    PREMIUM_PLAN_ID: string;
+    LEMON_SQUEEZY_STORE_ID: string;
     LEMON_SQUEEZY_API: string;
     DEVELOPMENT: "development" | "production" | "testing";
   }
