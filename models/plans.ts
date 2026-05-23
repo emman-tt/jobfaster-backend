@@ -21,6 +21,8 @@ interface PlanModel extends Model<
   maxApplicationsPerMonth: 50 | 500 | 1000;
   maxActivityDays: 30 | 90 | 365;
   maxStorageMb: 50 | 500 | 10000;
+  allowJobImageUploads: boolean;
+  allowAdvancedExports: boolean;
   sortOrder: 1 | 2 | 3;
   currency: string;
   isActive: boolean;
@@ -84,6 +86,16 @@ export const Plan = sequelize.define<PlanModel>(
     maxStorageMb: {
       type: DataTypes.INTEGER,
       field: "max_storage_mb",
+    },
+    allowJobImageUploads: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      field: "allow_job_image_uploads",
+    },
+    allowAdvancedExports: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      field: "allow_advanced_exports",
     },
     sortOrder: {
       type: DataTypes.INTEGER,

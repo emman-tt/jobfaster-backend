@@ -20,7 +20,10 @@ declare namespace NodeJS {
     RAPID_API_KEY: string;
     EMAIL_SERVICE: string;
     PRO_PLAN_ID: string;
+    LEMON_SQUEEZY_WEBHOOK_SECRET: string;
     PREMIUM_PLAN_ID: string;
+    LEMON_SQUEEZY_REDIRECT_URL: string;
+    LEMON_SQUEEZY_CANCEL_URL: string;
     LEMON_SQUEEZY_STORE_ID: string;
     LEMON_SQUEEZY_API: string;
     DEVELOPMENT: "development" | "production" | "testing";

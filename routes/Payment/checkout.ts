@@ -1,10 +1,9 @@
-import express,{ Request,Response,NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { authenticate } from "../../middleware/authenticate";
+import { CreateCheckout } from "../../controllers/payment/payment";
 
+const router = express.Router();
 
-const router = express.Router()
+router.post("/checkout", authenticate, CreateCheckout);
 
-router.post('/checkout', authenticate)
-
-
-export const PaymentRouter = router
+export const PaymentRouter = router;

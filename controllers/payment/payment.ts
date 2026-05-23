@@ -4,8 +4,13 @@ import { sendError } from "../../utils/sendError";
 import { User } from "../../models/user";
 import { lemonSqueezyConfig } from "../../services/payment";
 import "dotenv/config";
+import { Webhook } from "@lemonsqueezy/lemonsqueezy.js";
 
-const { LEMON_SQUEEZY_STORE_ID } = process.env;
+const {
+  LEMON_SQUEEZY_STORE_ID,
+  LEMON_SQUEEZY_CANCEL_URL,
+  LEMON_SQUEEZY_REDIRECT_URL,
+} = process.env;
 
 export async function CreateCheckout(
   req: Request,
@@ -42,6 +47,8 @@ export async function CreateCheckout(
                 user_id: user?.id,
               },
             },
+            redirectUrl: LEMON_SQUEEZY_REDIRECT_URL,
+            cancel_url: LEMON_SQUEEZY_CANCEL_URL,
           },
           relationships: {
             store: {
@@ -66,5 +73,13 @@ export async function CreateCheckout(
     console.log(checkoutUrl);
   } catch (error) {
     next(error);
+  }
+}
+
+export function handleOrderCreated(data: Webhook, userId: string) {
+  try {
+    console.log(data);
+  } catch (error) {
+    console.log(error);
   }
 }
