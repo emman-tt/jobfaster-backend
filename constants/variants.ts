@@ -6,6 +6,6 @@ interface variants {
   monthly_premium: string;
 }
 export const VARIANTS: variants = {
-  monthly_pro: PREMIUM_PLAN_ID,
-  monthly_premium: PRO_PLAN_ID,
+  monthly_pro: PRO_PLAN_ID,
+  monthly_premium: PREMIUM_PLAN_ID,
 };

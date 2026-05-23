@@ -1,5 +1,7 @@
 export type ErrorMessage =
   | "INVALID_CREDENTIALS"
+  | "INVALID_VARIANT"
+  | "INVALID_INPUT"
   | "UNAUTHORIZED"
   | "ACCESS_TOKEN_EXPIRED"
   | "REFRESH_TOKEN_EXPIRED"
@@ -16,7 +18,8 @@ export type ErrorMessage =
   | "JOB_DELETED"
   | "EMAIL_ERROR"
   | "JOBS_FETCH_ERROR"
-  | "SOCIAL_ACCOUNT";
+  | "SOCIAL_ACCOUNT"
+  | "CHECKOUT_FAILED";
 
 export type SuccessMessage =
   | "LOGIN_SUCCESS"
