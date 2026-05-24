@@ -10,13 +10,13 @@ lemonSqueezySetup({
   onError: (error) => console.error("Error!", error),
 });
 
-const { data, error } = await getAuthenticatedUser();
+// const { data, error } = await getAuthenticatedUser();
 
-if (error) {
-  console.log(error.message);
-} else {
-  console.log(data);
-}
+// if (error) {
+//   console.log(error.message);
+// } else {
+//   console.log(data);
+// }
 
 export const lemonSqueezyConfig = {
   apiKey: LEMON_SQUEEZY_API,

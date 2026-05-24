@@ -8,17 +8,25 @@ import "./services/socket.js";
 import "./services/worker.js";
 import { auth } from "./services/better-auth.js";
 import { toNodeHandler } from "better-auth/node";
-// import "./services/payment.js";
+import "./services/payment.js";
 import { handlePaymentWebhook } from "./controllers/payment/webhook.js";
 const app = express();
 const PORT = 3000;
+
+app.use((req: Request, res: Response, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.path}`);
+  next();
+});
 
 app.post(
   "/api/webhooks/lemon-squeezy",
   express.raw({
     type: "application/json",
   }),
-  handlePaymentWebhook,
+  (req: Request, res: Response) => {
+    console.log("[WEBHOOK] Handling Lemon Squeezy webhook...");
+    return handlePaymentWebhook(req, res);
+  },
 );
 
 app.set("etag", false);

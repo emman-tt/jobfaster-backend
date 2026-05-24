@@ -25,6 +25,7 @@ declare namespace NodeJS {
     LEMON_SQUEEZY_REDIRECT_URL: string;
     LEMON_SQUEEZY_CANCEL_URL: string;
     LEMON_SQUEEZY_STORE_ID: string;
+    LEMON_SQUEEZY_WEBHOOK_URL:string;
     LEMON_SQUEEZY_API: string;
     DEVELOPMENT: "development" | "production" | "testing";
   }

@@ -16,12 +16,18 @@ interface SubscriptionModel extends Model<
   planId: string;
   startDate: CreationOptional<Date>;
   endDate: Date | null;
+  renewsAt: Date | null;
+  trialEndsAt: Date | null;
   isActive: CreationOptional<boolean>;
+  status: string | null;
   billingCycle: "monthly" | "yearly" | null;
   amountPaid: number | null;
   currency: CreationOptional<string>;
   lemonSqueezyId: string | null;
   lemonSqueezyOrderId: string | null;
+  cardBrand: string | null;
+  cardLastFour: string | null;
+  updatePaymentMethodUrl: string | null;
   resumeUploadsThisMonth: CreationOptional<number>;
   applicationsThisMonth: CreationOptional<number>;
   lastResetDate: CreationOptional<Date>;
@@ -69,10 +75,24 @@ export const Subscription = sequelize.define<SubscriptionModel>(
       allowNull: true,
       field: "end_date",
     },
+    renewsAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: "renews_at",
+    },
+    trialEndsAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: "trial_ends_at",
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
       field: "is_active",
+    },
+    status: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
     },
     billingCycle: {
       type: DataTypes.ENUM("monthly", "yearly"),
@@ -97,6 +117,21 @@ export const Subscription = sequelize.define<SubscriptionModel>(
       type: DataTypes.STRING(255),
       allowNull: true,
       field: "lemon_squeezy_order_id",
+    },
+    cardBrand: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: "card_brand",
+    },
+    cardLastFour: {
+      type: DataTypes.STRING(4),
+      allowNull: true,
+      field: "card_last_four",
+    },
+    updatePaymentMethodUrl: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: "update_payment_method_url",
     },
     resumeUploadsThisMonth: {
       type: DataTypes.INTEGER,
