@@ -2,56 +2,93 @@ import { Redis } from "ioredis";
 import { Queue, Worker } from "bullmq";
 import { jobApply } from "../controllers/ai/ai";
 import { sendJobMail } from "../controllers/Mails/jobMail";
-import { logError } from "../utils/logger.js";
+import { logError, logInfo } from "../utils/logger.js";
 import { File } from "../models/file";
 import { sequelize } from "../database/pool";
 import { Activity } from "../models/activity";
 import { UserJob } from "../models/user-jobs";
 import { v4 as uuidv4 } from "uuid";
+import {
+  createInMemoryQueue,
+  createInMemoryWorker,
+  getInMemoryQueue,
+  getInMemoryWorker,
+} from "./inMemoryQueue.js";
 
-const { REDIS_URL } = process.env;
+const { REDIS_URL, DISABLE_REDIS } = process.env;
 
-console.log("REDIS_URL:", REDIS_URL ? "set" : "NOT SET");
+const useInMemory = DISABLE_REDIS === "true" || !REDIS_URL;
 
-if (!REDIS_URL) {
-  throw new Error("Redis url env wasn't injected");
-}
+let aiQueue: Queue | ReturnType<typeof createInMemoryQueue> | null = null;
+let aiWorker: Worker | ReturnType<typeof createInMemoryWorker> | null = null;
+let mailQueue: Queue | ReturnType<typeof createInMemoryQueue> | null = null;
+let mailWorker: Worker | ReturnType<typeof createInMemoryWorker> | null = null;
+let connection: Redis | null = null;
 
-let aiQueue: Queue | null = null;
-let aiWorker: Worker | null = null;
-let mailQueue: Queue | null = null;
-let mailWorker: Worker | null = null;
+if (useInMemory) {
+  logInfo("Using in-memory queue (Redis disabled)", { disabled: !!DISABLE_REDIS, noRedisUrl: !REDIS_URL });
 
-export const connection = new Redis(REDIS_URL, {
-  maxRetriesPerRequest: null,
-  connectTimeout: 15000,
-  enableOfflineQueue: true,
-  tls: {
-    checkServerIdentity: () => undefined,
-  },
-  retryStrategy: (times) => {
-    if (times > 4) {
-      console.log(`Redis unreachable after ${times} attempts, retrying every 30s`);
-      return 30000;
-    }
-    console.log(`Redis retry attempt ${times}`);
-    return Math.min(times * 1000, 5000);
-  },
-});
+  aiQueue = createInMemoryQueue("ai", {
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 3000,
+      },
+    },
+  });
 
-// Connection event listeners (just for logging)
-connection.on("connecting", () => console.log("Redis connecting..."));
-connection.on("connect", () => console.log("Redis connected"));
-connection.on("ready", () => console.log("Redis ready"));
-connection.on("error", (err) =>
-  logError(err, { file: "worker.ts", function: "connection", line: 44 }),
-);
-connection.on("close", () => console.log("Redis closed"));
+  mailQueue = createInMemoryQueue("email", {
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 5000,
+      },
+    },
+  });
 
-console.log("Initializing queues and workers...");
+  aiWorker = createInMemoryWorker("ai", AiProcessor, {
+    drainDelay: 30,
+    removeOnFail: { count: 100 },
+    removeOnComplete: { count: 100 },
+  });
 
-// AI queue
-if (!aiQueue) {
+  mailWorker = createInMemoryWorker("email", EmailProcessor, {
+    drainDelay: 30,
+    removeOnFail: { count: 100 },
+    removeOnComplete: { count: 100 },
+  });
+} else {
+  logInfo("REDIS_URL: set (using BullMQ)");
+
+  connection = new Redis(REDIS_URL!, {
+    maxRetriesPerRequest: null,
+    connectTimeout: 15000,
+    enableOfflineQueue: true,
+    tls: {
+      checkServerIdentity: () => undefined,
+    },
+    retryStrategy: (times) => {
+      if (times > 4) {
+        logInfo("Redis unreachable after multiple attempts, retrying every 30s", { attempts: times });
+        return 30000;
+      }
+      logInfo("Redis retry attempt", { attempt: times });
+      return Math.min(times * 1000, 5000);
+    },
+  });
+
+  connection.on("connecting", () => logInfo("Redis connecting..."));
+  connection.on("connect", () => logInfo("Redis connected"));
+  connection.on("ready", () => logInfo("Redis ready"));
+  connection.on("error", (err) =>
+    logError(err, { file: "worker.ts", function: "connection", line: 44 }),
+  );
+  connection.on("close", () => logInfo("Redis closed"));
+
+  logInfo("Initializing BullMQ queues and workers...");
+
   aiQueue = new Queue("ai", {
     connection,
     defaultJobOptions: {
@@ -62,10 +99,7 @@ if (!aiQueue) {
       },
     },
   });
-}
 
-// Email queue
-if (!mailQueue) {
   mailQueue = new Queue("email", {
     connection,
     defaultJobOptions: {
@@ -76,10 +110,7 @@ if (!mailQueue) {
       },
     },
   });
-}
 
-// AI worker
-if (!aiWorker) {
   aiWorker = new Worker("ai", AiProcessor, {
     connection,
     drainDelay: 30,
@@ -102,10 +133,7 @@ if (!aiWorker) {
       line: 217,
     });
   });
-}
 
-// Email worker
-if (!mailWorker) {
   mailWorker = new Worker("email", EmailProcessor, {
     connection,
     drainDelay: 30,
@@ -130,7 +158,7 @@ if (!mailWorker) {
   });
 }
 
-
+export { connection };
 
 interface ProcessorResponse {
   status: "success" | "failed";
@@ -226,7 +254,7 @@ export async function AiProcessor(job: any): Promise<ProcessorResponse> {
   const userId = data.userId as string;
   const fileId = data.fileId;
 
-  console.log("userId", userId);
+  logInfo("Processing AI job", { userId, jobId: job.id, type });
 
   try {
     const response = await jobApply(data.updatedData);
@@ -303,22 +331,55 @@ function handleError(
   };
 }
 
-export const getAiQueue = () => aiQueue;
-export const getAiWorker = () => aiWorker;
-export const getMailQueue = () => mailQueue;
-export const getMailWorker = () => mailWorker;
+export const getAiQueue = () => {
+  if (useInMemory) {
+    return getInMemoryQueue("ai");
+  }
+  return aiQueue;
+};
+
+export const getAiWorker = () => {
+  if (useInMemory) {
+    return getInMemoryWorker("ai");
+  }
+  return aiWorker;
+};
+
+export const getMailQueue = () => {
+  if (useInMemory) {
+    return getInMemoryQueue("email");
+  }
+  return mailQueue;
+};
+
+export const getMailWorker = () => {
+  if (useInMemory) {
+    return getInMemoryWorker("email");
+  }
+  return mailWorker;
+};
 
 export const onMailWorkerReady = (
-  callback: (queue: Queue, worker: Worker) => void,
+  callback: (queue: any, worker: any) => void,
 ): (() => void) => {
-  if (mailQueue && mailWorker) {
-    callback(mailQueue, mailWorker);
+  const mq = getMailQueue();
+  const mw = getMailWorker();
+  
+  if (mq && mw) {
+    callback(mq, mw);
+    return () => {};
+  }
+
+  if (useInMemory) {
+    return () => {};
   }
 
   const checkInterval = setInterval(() => {
-    if (mailQueue && mailWorker) {
+    const q = getMailQueue();
+    const w = getMailWorker();
+    if (q && w) {
       clearInterval(checkInterval);
-      callback(mailQueue, mailWorker);
+      callback(q, w);
     }
   }, 100);
 
@@ -326,16 +387,26 @@ export const onMailWorkerReady = (
 };
 
 export const onAiWorkerReady = (
-  callback: (queue: Queue, worker: Worker) => void,
+  callback: (queue: any, worker: any) => void,
 ): (() => void) => {
-  if (aiQueue && aiWorker) {
-    callback(aiQueue, aiWorker);
+  const aq = getAiQueue();
+  const aw = getAiWorker();
+  
+  if (aq && aw) {
+    callback(aq, aw);
+    return () => {};
+  }
+
+  if (useInMemory) {
+    return () => {};
   }
 
   const checkInterval = setInterval(() => {
-    if (aiQueue && aiWorker) {
+    const q = getAiQueue();
+    const w = getAiWorker();
+    if (q && w) {
       clearInterval(checkInterval);
-      callback(aiQueue, aiWorker);
+      callback(q, w);
     }
   }, 100);
 

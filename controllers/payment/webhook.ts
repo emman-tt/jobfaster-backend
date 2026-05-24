@@ -7,7 +7,9 @@ import {
   handleSubscriptionCancelled,
   handleSubscriptionExpired,
   handleSubscriptionResumed,
+  handleSubscriptionPaymentSuccess,
 } from "./payment";
+import { logError, logInfo } from "../../utils/logger.js";
 
 const { LEMON_SQUEEZY_WEBHOOK_SECRET } = process.env;
 
@@ -19,20 +21,23 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
     const payload =
       typeof rawBody === "string" ? rawBody : rawBody.toString();
 
-    console.log("=== Webhook received ===");
-    console.log("Event name:", eventName);
-    console.log("Has signature:", !!signature);
-    console.log("Has webhook secret:", !!LEMON_SQUEEZY_WEBHOOK_SECRET);
-
     if (!LEMON_SQUEEZY_WEBHOOK_SECRET) {
-      console.error("ERROR: Missing LEMON_SQUEEZY_WEBHOOK_SECRET in .env");
+      logError(new Error("Missing LEMON_SQUEEZY_WEBHOOK_SECRET in .env"), {
+        file: "webhook.ts",
+        function: "handlePaymentWebhook",
+        line: 32,
+      });
       return res
         .status(500)
         .json({ error: "Server configuration error: missing webhook secret" });
     }
 
     if (!signature) {
-      console.error("ERROR: Missing x-signature header");
+      logError(new Error("Missing x-signature header"), {
+        file: "webhook.ts",
+        function: "handlePaymentWebhook",
+        line: 40,
+      });
       return res.status(401).json({ error: "Missing signature header" });
     }
 
@@ -46,12 +51,12 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
       Buffer.from(signature as string),
     );
 
-    console.log("Signature valid:", signatureValid);
-    console.log("Computed hash:", hash);
-    console.log("Received signature:", signature);
-
     if (!signatureValid) {
-      console.error("ERROR: Invalid webhook signature");
+      logError(new Error("Invalid webhook signature"), {
+        file: "webhook.ts",
+        function: "handlePaymentWebhook",
+        line: 58,
+      });
       return res.status(401).json({ error: "Invalid signature" });
     }
 
@@ -60,48 +65,54 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
     const userId = custom_data?.user_id;
     const variantKey = custom_data?.variant_key;
 
-    console.log("Custom data:", custom_data);
-    console.log("User ID:", userId);
-    console.log("Variant Key:", variantKey);
-
     if (!userId) {
-      console.error("ERROR: No user_id in custom_data");
+      logError(new Error("No user_id in custom_data"), {
+        file: "webhook.ts",
+        function: "handlePaymentWebhook",
+        line: 72,
+      });
       return res.status(400).json({ error: "Missing user_id in webhook payload" });
     }
 
     switch (eventName) {
       case "subscription_created":
-        console.log("Handling subscription_created...");
+        logInfo("Webhook received", { event: "subscription_created", userId, variantKey });
         await handleSubscriptionCreated(webhook.data, userId, variantKey);
-        console.log("✅ subscription_created handled successfully");
         break;
       case "subscription_updated":
-        console.log("Handling subscription_updated...");
+        logInfo("Webhook received", { event: "subscription_updated", userId, variantKey });
         await handleSubscriptionUpdated(webhook.data, userId);
-        console.log("✅ subscription_updated handled successfully");
         break;
       case "subscription_cancelled":
-        console.log("Handling subscription_cancelled...");
+        logInfo("Webhook received", { event: "subscription_cancelled", userId, variantKey });
         await handleSubscriptionCancelled(webhook.data, userId);
-        console.log("✅ subscription_cancelled handled successfully");
         break;
       case "subscription_expired":
-        console.log("Handling subscription_expired...");
+        logInfo("Webhook received", { event: "subscription_expired", userId, variantKey });
         await handleSubscriptionExpired(webhook.data, userId);
-        console.log("✅ subscription_expired handled successfully");
         break;
       case "subscription_resumed":
-        console.log("Handling subscription_resumed...");
+        logInfo("Webhook received", { event: "subscription_resumed", userId, variantKey });
         await handleSubscriptionResumed(webhook.data, userId);
-        console.log("✅ subscription_resumed handled successfully");
+        break;
+      case "subscription_payment_success":
+        logInfo("Webhook received", { event: "subscription_payment_success", userId, variantKey });
+        await handleSubscriptionPaymentSuccess(webhook.data, userId);
+        break;
+      case "order_created":
+        logInfo("Webhook received", { event: "order_created", userId, variantKey });
         break;
       default:
-        console.log(`Unhandled webhook event: ${eventName}`);
+        logInfo("Unhandled webhook event", { event: eventName, userId, variantKey });
     }
 
     res.status(200).json({ received: true, event: eventName });
   } catch (error) {
-    console.error("🔥 Webhook error:", error);
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      file: "webhook.ts",
+      function: "handlePaymentWebhook",
+      line: 110,
+    });
     res.status(500).json({ error: "Internal server error", message: String(error) });
   }
 }

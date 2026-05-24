@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { VARIANTS } from "../../constants/variants";
 import { sendError } from "../../utils/sendError";
+import { logError, logInfo } from "../../utils/logger.js";
 import { User } from "../../models/user";
 import { Plan } from "../../models/plans";
 import { Subscription } from "../../models/subscription";
+import { Transaction } from "../../models/transaction";
+import { sequelize } from "../../database/pool";
 import { lemonSqueezyConfig } from "../../services/payment";
 import "dotenv/config";
 
@@ -82,7 +85,11 @@ export async function CreateCheckout(
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Lemon Squeezy error:", data);
+      logError(new Error(`Lemon Squeezy checkout failed: ${response.status}`), {
+        file: "payment.ts",
+        function: "CreateCheckout",
+        line: 88,
+      });
       return sendError(res, "CHECKOUT_FAILED", 500);
     }
 
@@ -112,6 +119,8 @@ export async function handleSubscriptionCreated(
   userId: string,
   variantKey?: string,
 ) {
+  const transaction = await sequelize.transaction();
+
   try {
     const attributes = data.attributes || {};
     const subscriptionId = data.id;
@@ -132,45 +141,117 @@ export async function handleSubscriptionCreated(
     }
 
     if (!planId) {
-      const freePlan = await Plan.findOne({ where: { variantId: "free" } });
+      const freePlan = await Plan.findOne({
+        where: { variantId: "free" },
+        transaction,
+      });
       planId = freePlan?.id || null;
     }
 
     if (!planId) {
-      console.error("Could not determine plan for subscription");
+      await transaction.rollback();
+      logError(new Error("Could not determine plan for subscription"), {
+        file: "payment.ts",
+        function: "handleSubscriptionCreated",
+        line: 149,
+      });
       return;
     }
 
-    const [subscription, created] = await Subscription.upsert(
-      {
-        userId,
-        planId,
-        lemonSqueezyId: String(subscriptionId),
-        lemonSqueezyOrderId: orderId ? String(orderId) : null,
-        isActive: status === "active" || status === "on_trial",
-        status,
-        startDate: new Date(),
-        endDate: endsAt ? new Date(endsAt) : null,
-        renewsAt: renewsAt ? new Date(renewsAt) : null,
-        trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
-        cardBrand: cardBrand || null,
-        cardLastFour: cardLastFour || null,
-        updatePaymentMethodUrl: updatePaymentMethodUrl || null,
-      },
-      {
-        conflictFields: ["lemon_squeezy_id"],
-      },
-    );
+    let subscription: InstanceType<typeof Subscription>;
+    let created = false;
 
-    console.log(
-      `Subscription ${created ? "created" : "updated"} for user ${userId}`,
-    );
+    const existingSubscription = await Subscription.findOne({
+      where: { lemonSqueezyId: String(subscriptionId) },
+      transaction,
+    });
+
+    if (existingSubscription) {
+      await existingSubscription.update(
+        {
+          planId,
+          lemonSqueezyOrderId: orderId ? String(orderId) : null,
+          isActive: status === "active" || status === "on_trial",
+          status,
+          endDate: endsAt ? new Date(endsAt) : null,
+          renewsAt: renewsAt ? new Date(renewsAt) : null,
+          trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
+          cardBrand: cardBrand || null,
+          cardLastFour: cardLastFour || null,
+          updatePaymentMethodUrl: updatePaymentMethodUrl || null,
+        },
+        { transaction },
+      );
+      subscription = existingSubscription;
+    } else {
+      subscription = await Subscription.create(
+        {
+          userId,
+          planId,
+          lemonSqueezyId: String(subscriptionId),
+          lemonSqueezyOrderId: orderId ? String(orderId) : null,
+          isActive: status === "active" || status === "on_trial",
+          status,
+          startDate: new Date(),
+          endDate: endsAt ? new Date(endsAt) : null,
+          renewsAt: renewsAt ? new Date(renewsAt) : null,
+          trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
+          cardBrand: cardBrand || null,
+          cardLastFour: cardLastFour || null,
+          updatePaymentMethodUrl: updatePaymentMethodUrl || null,
+        },
+        { transaction },
+      );
+      created = true;
+    }
+
+    const txnId = orderId ? `order-${orderId}` : `sub-${subscriptionId}`;
+    const existingTxn = await Transaction.findOne({
+      where: { providerTransactionId: txnId },
+      transaction,
+    });
+
+    if (!existingTxn) {
+      await Transaction.create(
+        {
+          userId,
+          subscriptionId: subscription.id,
+          provider: "lemon_squeezy",
+          providerTransactionId: txnId,
+          providerOrderId: orderId ? String(orderId) : null,
+          amount: 0,
+          currency: "USD",
+          status: "paid",
+          description: `Subscription ${created ? "created" : "updated"}: ${status}`,
+          paidAt: new Date(),
+        },
+        { transaction },
+      );
+    }
+
+    await transaction.commit();
+
+    logInfo("Subscription processed", {
+      action: created ? "created" : "updated",
+      userId,
+      subscriptionId,
+    });
   } catch (error) {
-    console.error("Error handling subscription_created:", error);
+    await transaction.rollback();
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      file: "payment.ts",
+      function: "handleSubscriptionCreated",
+      line: 222,
+    });
   }
 }
 
-export async function handleSubscriptionUpdated(data: any, userId: string) {
+export async function handleSubscriptionUpdated(
+  data: any,
+  userId: string,
+) {
+  const transaction = await sequelize.transaction();
+
   try {
     const attributes = data.attributes || {};
     const subscriptionId = data.id;
@@ -183,31 +264,48 @@ export async function handleSubscriptionUpdated(data: any, userId: string) {
 
     const subscription = await Subscription.findOne({
       where: { lemonSqueezyId: String(subscriptionId) },
+      transaction,
     });
 
     if (!subscription) {
-      console.log(`Subscription ${subscriptionId} not found, creating...`);
+      await transaction.rollback();
+      logInfo("Subscription not found, creating new", { subscriptionId, userId });
       await handleSubscriptionCreated(data, userId);
       return;
     }
 
-    await subscription.update({
-      isActive: status === "active" || status === "on_trial",
-      status,
-      renewsAt: renewsAt ? new Date(renewsAt) : null,
-      endDate: endsAt ? new Date(endsAt) : null,
-      cardBrand: cardBrand || undefined,
-      cardLastFour: cardLastFour || undefined,
-      updatePaymentMethodUrl: updatePaymentMethodUrl || undefined,
-    });
+    await subscription.update(
+      {
+        isActive: status === "active" || status === "on_trial",
+        status,
+        renewsAt: renewsAt ? new Date(renewsAt) : null,
+        endDate: endsAt ? new Date(endsAt) : null,
+        cardBrand: cardBrand || undefined,
+        cardLastFour: cardLastFour || undefined,
+        updatePaymentMethodUrl: updatePaymentMethodUrl || undefined,
+      },
+      { transaction },
+    );
 
-    console.log(`Subscription ${subscriptionId} updated for user ${userId}`);
+    await transaction.commit();
+
+    logInfo("Subscription updated", { subscriptionId, userId });
   } catch (error) {
-    console.error("Error handling subscription_updated:", error);
+    await transaction.rollback();
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      file: "payment.ts",
+      function: "handleSubscriptionUpdated",
+      line: 272,
+    });
   }
 }
 
-export async function handleSubscriptionCancelled(data: any, userId: string) {
+export async function handleSubscriptionCancelled(
+  data: any,
+  userId: string,
+) {
+  const transaction = await sequelize.transaction();
+
   try {
     const attributes = data.attributes || {};
     const subscriptionId = data.id;
@@ -217,46 +315,106 @@ export async function handleSubscriptionCancelled(data: any, userId: string) {
 
     const subscription = await Subscription.findOne({
       where: { lemonSqueezyId: String(subscriptionId) },
+      transaction,
     });
 
     if (subscription) {
-      await subscription.update({
-        isActive: false,
-        endDate: endsAt ? new Date(endsAt) : null,
-        cancelledAt: cancelledAt ? new Date(cancelledAt) : null,
-        cancelReason: cancelReason || null,
+      await subscription.update(
+        {
+          isActive: false,
+          endDate: endsAt ? new Date(endsAt) : null,
+          cancelledAt: cancelledAt ? new Date(cancelledAt) : null,
+          cancelReason: cancelReason || null,
+        },
+        { transaction },
+      );
+
+      const cancelTxnId = `cancel-${subscriptionId}`;
+      const existingCancelTxn = await Transaction.findOne({
+        where: { providerTransactionId: cancelTxnId },
+        transaction,
       });
 
-      console.log(
-        `Subscription ${subscriptionId} cancelled for user ${userId}`,
-      );
+      if (!existingCancelTxn) {
+        await Transaction.create(
+          {
+            userId,
+            subscriptionId: subscription.id,
+            provider: "lemon_squeezy",
+            providerTransactionId: cancelTxnId,
+            providerOrderId: attributes.order_id
+              ? String(attributes.order_id)
+              : null,
+            amount: 0,
+            currency: "USD",
+            status: "refunded",
+            description: "Subscription cancelled",
+          },
+          { transaction },
+        );
+      }
+
+      await transaction.commit();
+
+      logInfo("Subscription cancelled", { subscriptionId, userId });
+    } else {
+      await transaction.rollback();
+      logInfo("Subscription not found for cancellation", { subscriptionId, userId });
     }
   } catch (error) {
-    console.error("Error handling subscription_cancelled:", error);
+    await transaction.rollback();
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      file: "payment.ts",
+      function: "handleSubscriptionCancelled",
+      line: 333,
+    });
   }
 }
 
-export async function handleSubscriptionExpired(data: any, userId: string) {
+export async function handleSubscriptionExpired(
+  data: any,
+  userId: string,
+) {
+  const transaction = await sequelize.transaction();
+
   try {
     const subscriptionId = data.id;
 
     const subscription = await Subscription.findOne({
       where: { lemonSqueezyId: String(subscriptionId) },
+      transaction,
     });
 
     if (subscription) {
-      await subscription.update({
-        isActive: false,
-      });
+      await subscription.update(
+        {
+          isActive: false,
+        },
+        { transaction },
+      );
 
-      console.log(`Subscription ${subscriptionId} expired for user ${userId}`);
+      await transaction.commit();
+
+      logInfo("Subscription expired", { subscriptionId, userId });
+    } else {
+      await transaction.rollback();
     }
   } catch (error) {
-    console.error("Error handling subscription_expired:", error);
+    await transaction.rollback();
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      file: "payment.ts",
+      function: "handleSubscriptionExpired",
+      line: 369,
+    });
   }
 }
 
-export async function handleSubscriptionResumed(data: any, userId: string) {
+export async function handleSubscriptionResumed(
+  data: any,
+  userId: string,
+) {
+  const transaction = await sequelize.transaction();
+
   try {
     const attributes = data.attributes || {};
     const subscriptionId = data.id;
@@ -264,19 +422,124 @@ export async function handleSubscriptionResumed(data: any, userId: string) {
 
     const subscription = await Subscription.findOne({
       where: { lemonSqueezyId: String(subscriptionId) },
+      transaction,
     });
 
     if (subscription) {
-      await subscription.update({
-        isActive: true,
-        renewsAt: renewsAt ? new Date(renewsAt) : null,
-        cancelledAt: null,
-        cancelReason: null,
+      await subscription.update(
+        {
+          isActive: true,
+          renewsAt: renewsAt ? new Date(renewsAt) : null,
+          cancelledAt: null,
+          cancelReason: null,
+        },
+        { transaction },
+      );
+
+      const resumeTxnId = `resume-${subscriptionId}`;
+      const existingResumeTxn = await Transaction.findOne({
+        where: { providerTransactionId: resumeTxnId },
+        transaction,
       });
 
-      console.log(`Subscription ${subscriptionId} resumed for user ${userId}`);
+      if (!existingResumeTxn) {
+        await Transaction.create(
+          {
+            userId,
+            subscriptionId: subscription.id,
+            provider: "lemon_squeezy",
+            providerTransactionId: resumeTxnId,
+            amount: 0,
+            currency: "USD",
+            status: "paid",
+            description: "Subscription resumed",
+            paidAt: new Date(),
+          },
+          { transaction },
+        );
+      }
+
+      await transaction.commit();
+
+      logInfo("Subscription resumed", { subscriptionId, userId });
+    } else {
+      await transaction.rollback();
+    }
+   } catch (error) {
+     await transaction.rollback();
+     logError(error instanceof Error ? error : new Error(String(error)), {
+       file: "payment.ts",
+       function: "handleSubscriptionResumed",
+       line: 425,
+     });
+   }
+}
+
+export async function handleSubscriptionPaymentSuccess(
+  data: any,
+  userId: string,
+) {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const attributes = data.attributes || {};
+    const subscriptionId = attributes.subscription_id;
+    const orderId = attributes.order_id;
+    const amount = attributes.total;
+    const currency = attributes.currency;
+
+    if (!subscriptionId) {
+      await transaction.rollback();
+      logInfo("No subscription_id in payment success event", { userId });
+      return;
+    }
+
+    const subscription = await Subscription.findOne({
+      where: { lemonSqueezyId: String(subscriptionId) },
+      transaction,
+    });
+
+    if (subscription) {
+      const paymentTxnId = orderId
+        ? `payment-${orderId}`
+        : `payment-${subscriptionId}`;
+      
+      const existingPaymentTxn = await Transaction.findOne({
+        where: { providerTransactionId: paymentTxnId },
+        transaction,
+      });
+
+      if (!existingPaymentTxn) {
+        await Transaction.create(
+          {
+            userId,
+            subscriptionId: subscription.id,
+            provider: "lemon_squeezy",
+            providerTransactionId: paymentTxnId,
+            providerOrderId: orderId ? String(orderId) : null,
+            amount: amount || 0,
+            currency: currency || "USD",
+            status: "paid",
+            description: "Subscription payment successful",
+            paidAt: new Date(),
+          },
+          { transaction },
+        );
+      }
+
+      await transaction.commit();
+
+      logInfo("Payment recorded", { subscriptionId, userId, orderId });
+    } else {
+      await transaction.rollback();
+      logInfo("Subscription not found for payment", { subscriptionId, userId });
     }
   } catch (error) {
-    console.error("Error handling subscription_resumed:", error);
+    await transaction.rollback();
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      file: "payment.ts",
+      function: "handleSubscriptionPaymentSuccess",
+      line: 483,
+    });
   }
 }
