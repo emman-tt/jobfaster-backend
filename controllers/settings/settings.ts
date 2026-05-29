@@ -70,3 +70,22 @@ export async function UpdateNotifications(
     next(error);
   }
 }
+
+export async function deleteAccount(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const decoded = req.user;
+    const userId = decoded?.sub;
+
+    await Settings.destroy({
+      where: { userId },
+    });
+
+    sendSuccess(res, undefined, undefined, "ACCOUNT_DELETED");
+  } catch (error) {
+    next(error);
+  }
+}

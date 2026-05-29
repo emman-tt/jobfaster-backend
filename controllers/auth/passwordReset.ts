@@ -15,21 +15,19 @@ export async function forgotPassword(
 ) {
   try {
     const { email } = req.body;
-    console.log(email);
 
     const user = await User.findOne({ where: { email: email } });
     if (!user) {
-      console.log("no user found");
+
       return sendSuccess(res, 200, "success", "EMAIL_SUCCESS");
     }
 
-    console.log(user.dataValues);
 
     const socialAccount = await User.findOne({
       where: { id: user.id, password: "managed-by-better-auth" },
     });
     if (socialAccount) {
-      console.log("is social account");
+
       return sendError(res, "SOCIAL_ACCOUNT", 400, "failed");
     }
 

@@ -34,6 +34,34 @@ You MUST choose ONE template that best matches the job description and resume. I
 
 6. **academic** - Serif CV-style. Best for: researchers, educators, academic positions.
 
+7. **creative** - Gold decorative accents, artistic layout. Best for: designers, artists, creative professionals.
+
+8. **compact** - Efficient one-page optimized. Best for: early-career, concise applications, 1-2 years experience.
+
+9. **startup** - Metrics and traction focused. Best for: founders, startup employees, venture capital applications.
+
+10. **corporate** - Formal business-oriented with blue accents. Best for: Fortune 500, banking, consulting, legal.
+
+11. **freelance** - Project and client focused. Best for: freelancers, contractors, consultants, gig economy.
+
+12. **elegant** - Sophisticated minimal with decorative lines. Best for: luxury industries, fashion, publishing, high-end services.
+
+13. **military** - Structured achievement-focused. Best for: military veterans transitioning to civilian, leadership roles, government.
+
+14. **sales** - Results-oriented with metrics emphasis. Best for: sales professionals, marketers, business development, account executives.
+
+15. **healthcare** - Clean professional with medical blue. Best for: doctors, nurses, pharmacists, healthcare administrators, clinical roles.
+
+16. **design** - Visual-focused for designers. Best for: UI/UX designers, graphic designers, creative directors, brand designers.
+
+17. **graduate** - Education-first format. Best for: recent graduates, students, internships, entry-level positions.
+
+18. **international** - European-style CV with sidebar. Best for: international applications, global companies, European job markets.
+
+19. **bold** - Eye-catching high-impact. Best for: creative industries, standing out, creative roles where personality matters.
+
+20. **sidebar** - Classic two-column sidebar layout. Best for: professional clean layout, easy scanning, balanced structure.
+
 ## TASK 1 — RESUME TAILORING RULES
 
 1. **Parse first** — Extract all resume information from the raw text before tailoring. Infer structure from context.
@@ -96,7 +124,7 @@ Must be directly parseable by JSON.parse(). Start with { and end with }.
 Do NOT include fullEmail — assembled in code.
 
 {
-  "template": "classic|modern|executive|technical|ats|academic",
+  "template": "classic|modern|executive|technical|ats|academic|creative|compact|startup|corporate|freelance|elegant|military|sales|healthcare|design|graduate|international|bold|sidebar",
   "reason": "Brief explanation of why this template was chosen",
   "resume": {
     "personal": {

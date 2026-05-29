@@ -123,7 +123,6 @@ export async function uploadResume(
 
     return sendSuccess(res, 200, undefined, "UPLOAD_SUCCESS", data);
   } catch (error) {
-    console.log(error);
     t.rollback();
     next(error);
   }

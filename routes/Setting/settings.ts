@@ -3,6 +3,7 @@ import { authenticate } from "../../middleware/authenticate";
 import {
   FetchSettingsData,
   UpdateNotifications,
+  deleteAccount,
 } from "../../controllers/settings/settings";
 import { sendError } from "../../utils/sendError";
 import { body } from "express-validator";
@@ -50,6 +51,6 @@ router.patch(
   updateUserData
 );
 router.patch("/notification", authenticate, UpdateNotifications);
-router.delete("/", authenticate);
+router.delete("/", authenticate, deleteAccount);
 
 export const SettingsRouter = router;

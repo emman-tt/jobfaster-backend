@@ -102,7 +102,7 @@ export async function sendJobMail(input: MailOptions): Promise<MailResponse> {
       };
     }
 
-    console.log(data);
+
     return {
       status: "success",
       message: "JOB_MAIL_SUCCESS",

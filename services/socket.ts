@@ -25,8 +25,6 @@ socket.on("connection", async (ws: WebSocket, req: Request) => {
   }
   clients.set(userId, ws);
 
-  console.log("Client connected");
-
   ws.send(
     JSON.stringify({
       type: "connected",
@@ -53,7 +51,6 @@ socket.on("connection", async (ws: WebSocket, req: Request) => {
   });
 
   ws.on("close", () => {
-    console.log("Client disconnected");
     clients.delete(userId);
   });
 });

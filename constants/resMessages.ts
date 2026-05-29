@@ -19,7 +19,8 @@ export type ErrorMessage =
   | "EMAIL_ERROR"
   | "JOBS_FETCH_ERROR"
   | "SOCIAL_ACCOUNT"
-  | "CHECKOUT_FAILED";
+  | "CHECKOUT_FAILED"
+  | "ALREADY_SUBSCRIBED";
 
 export type SuccessMessage =
   | "LOGIN_SUCCESS"
@@ -39,4 +40,5 @@ export type SuccessMessage =
   | "EMAIL_SUCCESS"
   | "JOB_SAVED"
   | "JOB_UPDATED"
-  | "JOBS_FETCHED_AND_SAVED";
+  | "JOBS_FETCHED_AND_SAVED"
+  | "ACCOUNT_DELETED";

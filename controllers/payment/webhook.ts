@@ -9,14 +9,42 @@ import {
   handleSubscriptionResumed,
   handleSubscriptionPaymentSuccess,
 } from "./payment";
+import { ProcessedEvent } from "../../models/processed-event";
 import { logError, logInfo } from "../../utils/logger.js";
 
 const { LEMON_SQUEEZY_WEBHOOK_SECRET } = process.env;
 
+async function processOrderCreated(data: any, userId: string) {
+  const attributes = data.attributes || {};
+  const firstSub = attributes.first_subscription;
+  const subscriptionId = firstSub?.id || firstSub?.data?.id;
+  const orderNumber = attributes.order_number;
+  const amount = attributes.total || 0;
+  const currency = attributes.currency || "USD";
+
+  if (!subscriptionId) {
+    logInfo("No subscription in order_created data", { userId, orderNumber });
+    return;
+  }
+
+  await handleSubscriptionPaymentSuccess(
+    {
+      id: subscriptionId,
+      attributes: {
+        subscription_id: subscriptionId,
+        order_id: orderNumber,
+        total: amount,
+        currency,
+      },
+    },
+    userId,
+  );
+}
+
 export async function handlePaymentWebhook(req: Request, res: Response) {
   try {
-    const signature = req.headers["x-signature"];
-    const eventName = req.headers["x-event-name"];
+    const signature = req.headers["x-signature"] as string | undefined;
+    const eventName = req.headers["x-event-name"] as string | undefined;
     const rawBody = req.body;
     const payload =
       typeof rawBody === "string" ? rawBody : rawBody.toString();
@@ -41,17 +69,15 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
       return res.status(401).json({ error: "Missing signature header" });
     }
 
-    const hash = crypto
+    const sigHash = crypto
       .createHmac("sha256", LEMON_SQUEEZY_WEBHOOK_SECRET)
       .update(payload)
       .digest("hex");
 
-    const signatureValid = crypto.timingSafeEqual(
-      Buffer.from(hash),
-      Buffer.from(signature as string),
-    );
+    const hashBuf = Buffer.from(sigHash);
+    const sigBuf = Buffer.from(signature);
 
-    if (!signatureValid) {
+    if (hashBuf.length !== sigBuf.length || !crypto.timingSafeEqual(hashBuf, sigBuf)) {
       logError(new Error("Invalid webhook signature"), {
         file: "webhook.ts",
         function: "handlePaymentWebhook",
@@ -72,6 +98,29 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
         line: 72,
       });
       return res.status(400).json({ error: "Missing user_id in webhook payload" });
+    }
+
+    const eventDataId = webhook.data?.id || "";
+    const idempotencyKey = crypto
+      .createHash("sha256")
+      .update(`${eventName}:${eventDataId}`)
+      .digest("hex");
+
+    try {
+      await ProcessedEvent.create({
+        idempotencyKey,
+        eventName: eventName || "unknown",
+      });
+    } catch (err: any) {
+      if (err?.name === "SequelizeUniqueConstraintError") {
+        logInfo("Duplicate webhook event skipped", {
+          event: eventName,
+          idempotencyKey,
+          userId,
+        });
+        return res.status(200).json({ received: true, event: eventName, duplicate: true });
+      }
+      throw err;
     }
 
     switch (eventName) {
@@ -99,8 +148,12 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
         logInfo("Webhook received", { event: "subscription_payment_success", userId, variantKey });
         await handleSubscriptionPaymentSuccess(webhook.data, userId);
         break;
+      case "subscription_payment_failed":
+        logInfo("Webhook received", { event: "subscription_payment_failed", userId, variantKey });
+        break;
       case "order_created":
         logInfo("Webhook received", { event: "order_created", userId, variantKey });
+        await processOrderCreated(webhook.data, userId);
         break;
       default:
         logInfo("Unhandled webhook event", { event: eventName, userId, variantKey });

@@ -11,6 +11,7 @@ import { Settings } from "../models/settings.js";
 import { Subscription } from "../models/subscription.js";
 import { Plan } from "../models/plans.js";
 import { Transaction } from "../models/transaction.js";
+import { ProcessedEvent } from "../models/processed-event.js";
 
 export async function db() {
   User.hasMany(Pointer, {

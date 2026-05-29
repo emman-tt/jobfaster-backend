@@ -10,6 +10,7 @@ import { Token } from "../../models/token";
 import { sequelize } from "../../database/pool";
 import { Sequelize } from "sequelize";
 import { Settings } from "../../models/settings";
+import { assignFreePlan } from "../payment/payment";
 
 import { auth as betterAuth } from "../../services/better-auth";
 
@@ -85,6 +86,8 @@ export async function handleBetterAuth(
         newJobsAlert: true,
       });
     }
+
+    await assignFreePlan(user.id);
 
     res.cookie("refreshToken", refreshToken, {
       maxAge: 1000 * 60 * 60 * 12 * 7,
@@ -168,6 +171,8 @@ export async function register(
       },
     );
 
+    await assignFreePlan(user.dataValues.id, { transaction: t });
+
     await t.commit();
 
     res.cookie("refreshToken", refreshToken, {
@@ -185,7 +190,6 @@ export async function register(
     );
   } catch (error) {
     await t.rollback();
-    console.log(error);
     next(error);
   }
 }
@@ -254,7 +258,6 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
     return sendSuccess(res, undefined, undefined, "LOGIN_SUCCESS", accessToken);
   } catch (error) {
-    console.log(error);
     next(error);
   }
 }

@@ -56,7 +56,6 @@ export async function UploadFolder(
 
     await t.commit();
   } catch (error) {
-    console.log(error);
     await t.rollback();
     next(error);
   }

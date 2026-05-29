@@ -6,10 +6,23 @@ const { RAPID_API_KEY } = process.env;
 
 export async function getJobs(req: Request, res: Response, next: NextFunction) {
   try {
-    const jobs = await Job.findAll({
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 12));
+    const offset = (page - 1) * limit;
+
+    const { rows: jobs, count: total } = await Job.findAndCountAll({
       order: [["createdAt", "DESC"]],
+      offset,
+      limit,
     });
-    return sendSuccess(res, 200, "success", "JOBS_FETCHED", jobs);
+
+    return sendSuccess(res, 200, "success", "JOBS_FETCHED", {
+      data: jobs,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page * limit < total,
+    });
   } catch (error) {
     console.error(error);
     next(error);
@@ -66,7 +79,7 @@ export async function fetchJobs() {
         jobHighlights: job.job_highlights || {},
       });
     }
-    console.log("done");
+
   } catch (error) {
     console.log(error);
   }

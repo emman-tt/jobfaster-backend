@@ -1,12 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { VARIANTS } from "../../constants/variants";
 import { sendError } from "../../utils/sendError";
+import { sendSuccess } from "../../utils/sendSuccess";
 import { logError, logInfo } from "../../utils/logger.js";
 import { User } from "../../models/user";
 import { Plan } from "../../models/plans";
 import { Subscription } from "../../models/subscription";
 import { Transaction } from "../../models/transaction";
 import { sequelize } from "../../database/pool";
+import { Transaction as SequelizeTransaction } from "sequelize";
 import { lemonSqueezyConfig } from "../../services/payment";
 import "dotenv/config";
 
@@ -32,6 +34,22 @@ export async function CreateCheckout(
     const variantId = VARIANTS[variantKey];
     if (!variantId) {
       return sendError(res, "INVALID_VARIANT", 404);
+    }
+
+    const plan = await Plan.findOne({
+      where: { variantId: variantKey, isActive: true },
+    });
+
+    if (!plan) {
+      return sendError(res, "INVALID_VARIANT", 404);
+    }
+
+    const existingActiveSub = await Subscription.findOne({
+      where: { userId, isActive: true },
+    });
+
+    if (existingActiveSub) {
+      return sendError(res, "ALREADY_SUBSCRIBED", 409);
     }
 
     const user = await User.findByPk(userId, {
@@ -269,8 +287,7 @@ export async function handleSubscriptionUpdated(
 
     if (!subscription) {
       await transaction.rollback();
-      logInfo("Subscription not found, creating new", { subscriptionId, userId });
-      await handleSubscriptionCreated(data, userId);
+      logInfo("Subscription not found for update — skipping", { subscriptionId, userId });
       return;
     }
 
@@ -347,7 +364,7 @@ export async function handleSubscriptionCancelled(
               : null,
             amount: 0,
             currency: "USD",
-            status: "refunded",
+            status: "cancelled",
             description: "Subscription cancelled",
           },
           { transaction },
@@ -541,5 +558,80 @@ export async function handleSubscriptionPaymentSuccess(
       function: "handleSubscriptionPaymentSuccess",
       line: 483,
     });
+  }
+}
+
+export async function assignFreePlan(
+  userId: string,
+  options?: { transaction?: SequelizeTransaction },
+) {
+  const freePlan = await Plan.findOne({
+    where: { variantId: "free" },
+    transaction: options?.transaction,
+  });
+
+  if (!freePlan) {
+    logError(new Error("Free plan not found in database"), {
+      file: "payment.ts",
+      function: "assignFreePlan",
+      line: 0,
+    });
+    return;
+  }
+
+  const existing = await Subscription.findOne({
+    where: { userId },
+    transaction: options?.transaction,
+  });
+
+  if (existing) {
+    return;
+  }
+
+  await Subscription.create(
+    {
+      userId,
+      planId: freePlan.id,
+      isActive: true,
+      status: "free",
+      startDate: new Date(),
+    },
+    { transaction: options?.transaction },
+  );
+}
+
+export async function getActiveSubscription(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const decoded = req.user;
+    const userId = decoded?.sub;
+
+    const subscription = await Subscription.findOne({
+      where: { userId, isActive: true },
+      include: [
+        {
+          model: Plan,
+          attributes: [
+            "name",
+            "displayName",
+            "variantId",
+            "priceMonthly",
+            "priceYearly",
+            "maxResumeUploads",
+            "maxApplicationsPerMonth",
+            "maxStorageMb",
+            "allowJobImageUploads",
+            "allowAdvancedExports",
+          ],
+        },
+      ],
+    });
+
+    sendSuccess(res, 200, "success", "FETCH_SUCCESS", subscription);
+  } catch (error) {
+    next(error);
   }
 }

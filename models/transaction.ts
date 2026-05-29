@@ -20,7 +20,7 @@ interface TransactionModel extends Model<
   amount: number;
   currency: CreationOptional<string>;
   description: string | null;
-  status: CreationOptional<"pending" | "paid" | "failed" | "refunded" | "disputed">;
+  status: CreationOptional<"pending" | "paid" | "failed" | "refunded" | "disputed" | "cancelled">;
   paidAt: Date | null;
   failedAt: Date | null;
   refundedAt: Date | null;

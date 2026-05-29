@@ -7,6 +7,7 @@ import { userRouter } from "./User/user";
 import { SettingsRouter } from "./Setting/settings";
 import { PlansRouter } from "./Plans/plans";
 import { PaymentRouter } from "./Payment/checkout";
+import { SubscriptionRouter } from "./Subscription/subscription";
 const router = express.Router();
 
 router.use("/auth", authRouter);
@@ -17,5 +18,6 @@ router.use("/user", userRouter);
 router.use("/settings", SettingsRouter);
 router.use("/plans", PlansRouter);
 router.use("/payment", PaymentRouter);
+router.use("/subscription", SubscriptionRouter);
 
 export default router;

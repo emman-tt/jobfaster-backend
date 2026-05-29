@@ -104,7 +104,6 @@ export async function getPrograms(
 
     sendSuccess(res, 200, "success", "FETCH_SUCCESS", allPrograms || []);
   } catch (error) {
-    console.log(error);
     next(error);
   }
 }
@@ -141,7 +140,6 @@ export async function MoveFile(
 
     sendSuccess(res, undefined, "success", "UPDATE SUCCESS");
   } catch (error) {
-    console.log(error);
     next(error);
   }
 }

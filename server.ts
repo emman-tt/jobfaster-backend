@@ -3,6 +3,8 @@ import { db } from "./database/database.js";
 import router from "./routes/route.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { GlobalErrorHandler } from "./utils/globalErrorHandler.js";
 import "./services/socket.js";
 import "./services/worker.js";
@@ -13,10 +15,32 @@ import { handlePaymentWebhook } from "./controllers/payment/webhook.js";
 const app = express();
 const PORT = 3000;
 
+app.use(helmet());
+
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { status: "failed", message: "Too many requests, please try again later" },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { status: "failed", message: "Too many auth attempts, please try again later" },
+});
+
 app.use((req: Request, res: Response, next) => {
-  console.log(`[REQUEST] ${req.method} ${req.path}`);
+  if (req.path.startsWith("/api/auth") || req.path.startsWith("/api/v1/auth")) {
+    return authLimiter(req, res, next);
+  }
   next();
 });
+
+app.use(generalLimiter);
 
 app.post(
   "/api/webhooks/lemon-squeezy",
@@ -31,9 +55,11 @@ app.post(
 
 app.set("etag", false);
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [FRONTEND_URL],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],

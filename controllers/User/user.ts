@@ -59,7 +59,6 @@ export async function updateUserData(
         uploadStream.end(file.buffer);
       });
 
-      console.log(uploadResult);
       updates.image = uploadResult?.url;
     }
 
