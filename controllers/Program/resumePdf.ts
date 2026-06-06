@@ -3,10 +3,20 @@ import { generatePDFFromHTML } from "../../services/pdf-generator";
 import { sendSuccess } from "../../utils/sendSuccess";
 import { sendError } from "../../utils/sendError";
 import { Pointer } from "../../models/pointer";
+import { Subscription } from "../../models/subscription";
+import { Plan } from "../../models/plans";
 import { File } from "../../models/file";
 import { Activity } from "../../models/activity";
 import { sequelize } from "../../database/pool";
 import { v4 as uuidv4 } from "uuid";
+import {
+  PlanLimitError,
+  checkResumeUploadLimit,
+  checkStorageLimit,
+  getSubscriptionWithPlan,
+  getPlan,
+} from "../../services/planEnforcer";
+
 export async function saveResumePDF(
   req: Request,
   res: Response,
@@ -17,14 +27,26 @@ export async function saveResumePDF(
   try {
     const { html, name } = req.body;
     const decoded = req?.user;
+    const userId = decoded?.sub as string;
 
     if (!html || !name) {
       return sendError(res, "NO_FILE", 400, "failed");
     }
 
+    const subscription = await getSubscriptionWithPlan(userId);
+
+    if (subscription) {
+      const plan = getPlan(subscription);
+      checkResumeUploadLimit(subscription, plan);
+    }
+
     const result = await generatePDFFromHTML(html, name);
 
-    const userId = decoded?.sub as string;
+    if (subscription) {
+      const plan = getPlan(subscription);
+      checkStorageLimit(subscription, plan, result.size);
+    }
+
     const id = uuidv4();
 
     await Pointer.create(
@@ -61,6 +83,16 @@ export async function saveResumePDF(
       { transaction: t },
     );
 
+    if (subscription) {
+      await subscription.increment(
+        {
+          resumeUploadsThisMonth: 1,
+          currentStorageBytes: result.size,
+        },
+        { transaction: t },
+      );
+    }
+
     await t.commit();
 
     return sendSuccess(res, 200, undefined, "RESUME_CREATED", {
@@ -70,6 +102,9 @@ export async function saveResumePDF(
     });
   } catch (error) {
     await t.rollback();
+    if (error instanceof PlanLimitError) {
+      return sendError(res, error.code as any, 403);
+    }
     next(error);
   }
 }

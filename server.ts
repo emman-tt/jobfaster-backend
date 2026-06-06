@@ -22,7 +22,10 @@ const generalLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { status: "failed", message: "Too many requests, please try again later" },
+  message: {
+    status: "failed",
+    message: "Too many requests, please try again later",
+  },
 });
 
 const authLimiter = rateLimit({
@@ -30,17 +33,20 @@ const authLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { status: "failed", message: "Too many auth attempts, please try again later" },
+  message: {
+    status: "failed",
+    message: "Too many auth attempts, please try again later",
+  },
 });
 
-app.use((req: Request, res: Response, next) => {
-  if (req.path.startsWith("/api/auth") || req.path.startsWith("/api/v1/auth")) {
-    return authLimiter(req, res, next);
-  }
-  next();
-});
+// app.use((req: Request, res: Response, next) => {
+//   if (req.path.startsWith("/api/auth") || req.path.startsWith("/api/v1/auth")) {
+//     return authLimiter(req, res, next);
+//   }
+//   next();
+// });
 
-app.use(generalLimiter);
+// app.use(generalLimiter);
 
 app.post(
   "/api/webhooks/lemon-squeezy",

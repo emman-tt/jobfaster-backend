@@ -46,8 +46,7 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
     const signature = req.headers["x-signature"] as string | undefined;
     const eventName = req.headers["x-event-name"] as string | undefined;
     const rawBody = req.body;
-    const payload =
-      typeof rawBody === "string" ? rawBody : rawBody.toString();
+    const payload = typeof rawBody === "string" ? rawBody : rawBody.toString();
 
     if (!LEMON_SQUEEZY_WEBHOOK_SECRET) {
       logError(new Error("Missing LEMON_SQUEEZY_WEBHOOK_SECRET in .env"), {
@@ -77,7 +76,10 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
     const hashBuf = Buffer.from(sigHash);
     const sigBuf = Buffer.from(signature);
 
-    if (hashBuf.length !== sigBuf.length || !crypto.timingSafeEqual(hashBuf, sigBuf)) {
+    if (
+      hashBuf.length !== sigBuf.length ||
+      !crypto.timingSafeEqual(hashBuf, sigBuf)
+    ) {
       logError(new Error("Invalid webhook signature"), {
         file: "webhook.ts",
         function: "handlePaymentWebhook",
@@ -97,7 +99,9 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
         function: "handlePaymentWebhook",
         line: 72,
       });
-      return res.status(400).json({ error: "Missing user_id in webhook payload" });
+      return res
+        .status(400)
+        .json({ error: "Missing user_id in webhook payload" });
     }
 
     const eventDataId = webhook.data?.id || "";
@@ -118,45 +122,83 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
           idempotencyKey,
           userId,
         });
-        return res.status(200).json({ received: true, event: eventName, duplicate: true });
+        return res
+          .status(200)
+          .json({ received: true, event: eventName, duplicate: true });
       }
       throw err;
     }
 
     switch (eventName) {
       case "subscription_created":
-        logInfo("Webhook received", { event: "subscription_created", userId, variantKey });
+        logInfo("Webhook received", {
+          event: "subscription_created",
+          userId,
+          variantKey,
+        });
         await handleSubscriptionCreated(webhook.data, userId, variantKey);
         break;
       case "subscription_updated":
-        logInfo("Webhook received", { event: "subscription_updated", userId, variantKey });
+        logInfo("Webhook received", {
+          event: "subscription_updated",
+          userId,
+          variantKey,
+        });
         await handleSubscriptionUpdated(webhook.data, userId);
         break;
       case "subscription_cancelled":
-        logInfo("Webhook received", { event: "subscription_cancelled", userId, variantKey });
+        logInfo("Webhook received", {
+          event: "subscription_cancelled",
+          userId,
+          variantKey,
+        });
         await handleSubscriptionCancelled(webhook.data, userId);
         break;
       case "subscription_expired":
-        logInfo("Webhook received", { event: "subscription_expired", userId, variantKey });
+        logInfo("Webhook received", {
+          event: "subscription_expired",
+          userId,
+          variantKey,
+        });
         await handleSubscriptionExpired(webhook.data, userId);
         break;
       case "subscription_resumed":
-        logInfo("Webhook received", { event: "subscription_resumed", userId, variantKey });
+        logInfo("Webhook received", {
+          event: "subscription_resumed",
+          userId,
+          variantKey,
+        });
         await handleSubscriptionResumed(webhook.data, userId);
         break;
       case "subscription_payment_success":
-        logInfo("Webhook received", { event: "subscription_payment_success", userId, variantKey });
+        logInfo("Webhook received", {
+          event: "subscription_payment_success",
+          userId,
+          variantKey,
+        });
         await handleSubscriptionPaymentSuccess(webhook.data, userId);
         break;
       case "subscription_payment_failed":
-        logInfo("Webhook received", { event: "subscription_payment_failed", userId, variantKey });
+        logInfo("Webhook received", {
+          event: "subscription_payment_failed",
+          userId,
+          variantKey,
+        });
         break;
       case "order_created":
-        logInfo("Webhook received", { event: "order_created", userId, variantKey });
+        logInfo("Webhook received", {
+          event: "order_created",
+          userId,
+          variantKey,
+        });
         await processOrderCreated(webhook.data, userId);
         break;
       default:
-        logInfo("Unhandled webhook event", { event: eventName, userId, variantKey });
+        logInfo("Unhandled webhook event", {
+          event: eventName,
+          userId,
+          variantKey,
+        });
     }
 
     res.status(200).json({ received: true, event: eventName });
@@ -166,6 +208,8 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
       function: "handlePaymentWebhook",
       line: 110,
     });
-    res.status(500).json({ error: "Internal server error", message: String(error) });
+    res
+      .status(500)
+      .json({ error: "Internal server error", message: String(error) });
   }
 }

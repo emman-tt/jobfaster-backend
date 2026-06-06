@@ -1,6 +1,16 @@
 import { Response, Request, NextFunction } from "express";
 import { UserJob } from "../../models/user-jobs";
+import { Subscription } from "../../models/subscription";
+import { Plan } from "../../models/plans";
 import { sendSuccess } from "../../utils/sendSuccess";
+import { sendError } from "../../utils/sendError";
+import { sequelize } from "../../database/pool";
+import {
+  PlanLimitError,
+  checkApplicationLimit,
+  getSubscriptionWithPlan,
+  getPlan,
+} from "../../services/planEnforcer";
 
 export async function getJobTrack(
   req: Request,
@@ -28,10 +38,18 @@ export async function saveJobTrack(
   res: Response,
   next: NextFunction,
 ) {
+  const t = await sequelize.transaction();
   try {
     const decoded = req.user;
     const userId = decoded?.sub as string;
     const job = req.body?.job;
+
+    const subscription = await getSubscriptionWithPlan(userId);
+
+    if (subscription) {
+      const plan = getPlan(subscription);
+      checkApplicationLimit(subscription, plan);
+    }
 
     await UserJob.create({
       userId,
@@ -59,8 +77,18 @@ export async function saveJobTrack(
       jobHighlights: job.jobHighlights || {},
     });
 
+    if (subscription) {
+      await subscription.increment("applicationsThisMonth", { transaction: t });
+    }
+
+    await t.commit();
+
     return sendSuccess(res, 201, "success", "JOB_SAVED");
   } catch (error) {
+    await t.rollback();
+    if (error instanceof PlanLimitError) {
+      return sendError(res, error.code as any, 403);
+    }
     next(error);
   }
 }

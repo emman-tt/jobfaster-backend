@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { VARIANTS } from "../../constants/variants";
 import { sendError } from "../../utils/sendError";
-import { sendSuccess } from "../../utils/sendSuccess";
 import { logError, logInfo } from "../../utils/logger.js";
 import { User } from "../../models/user";
 import { Plan } from "../../models/plans";
@@ -42,14 +41,6 @@ export async function CreateCheckout(
 
     if (!plan) {
       return sendError(res, "INVALID_VARIANT", 404);
-    }
-
-    const existingActiveSub = await Subscription.findOne({
-      where: { userId, isActive: true },
-    });
-
-    if (existingActiveSub) {
-      return sendError(res, "ALREADY_SUBSCRIBED", 409);
     }
 
     const user = await User.findByPk(userId, {
@@ -223,30 +214,6 @@ export async function handleSubscriptionCreated(
       created = true;
     }
 
-    const txnId = orderId ? `order-${orderId}` : `sub-${subscriptionId}`;
-    const existingTxn = await Transaction.findOne({
-      where: { providerTransactionId: txnId },
-      transaction,
-    });
-
-    if (!existingTxn) {
-      await Transaction.create(
-        {
-          userId,
-          subscriptionId: subscription.id,
-          provider: "lemon_squeezy",
-          providerTransactionId: txnId,
-          providerOrderId: orderId ? String(orderId) : null,
-          amount: 0,
-          currency: "USD",
-          status: "paid",
-          description: `Subscription ${created ? "created" : "updated"}: ${status}`,
-          paidAt: new Date(),
-        },
-        { transaction },
-      );
-    }
-
     await transaction.commit();
 
     logInfo("Subscription processed", {
@@ -264,10 +231,7 @@ export async function handleSubscriptionCreated(
   }
 }
 
-export async function handleSubscriptionUpdated(
-  data: any,
-  userId: string,
-) {
+export async function handleSubscriptionUpdated(data: any, userId: string) {
   const transaction = await sequelize.transaction();
 
   try {
@@ -287,7 +251,10 @@ export async function handleSubscriptionUpdated(
 
     if (!subscription) {
       await transaction.rollback();
-      logInfo("Subscription not found for update — skipping", { subscriptionId, userId });
+      logInfo("Subscription not found for update — skipping", {
+        subscriptionId,
+        userId,
+      });
       return;
     }
 
@@ -317,10 +284,7 @@ export async function handleSubscriptionUpdated(
   }
 }
 
-export async function handleSubscriptionCancelled(
-  data: any,
-  userId: string,
-) {
+export async function handleSubscriptionCancelled(data: any, userId: string) {
   const transaction = await sequelize.transaction();
 
   try {
@@ -376,7 +340,10 @@ export async function handleSubscriptionCancelled(
       logInfo("Subscription cancelled", { subscriptionId, userId });
     } else {
       await transaction.rollback();
-      logInfo("Subscription not found for cancellation", { subscriptionId, userId });
+      logInfo("Subscription not found for cancellation", {
+        subscriptionId,
+        userId,
+      });
     }
   } catch (error) {
     await transaction.rollback();
@@ -388,10 +355,7 @@ export async function handleSubscriptionCancelled(
   }
 }
 
-export async function handleSubscriptionExpired(
-  data: any,
-  userId: string,
-) {
+export async function handleSubscriptionExpired(data: any, userId: string) {
   const transaction = await sequelize.transaction();
 
   try {
@@ -426,10 +390,7 @@ export async function handleSubscriptionExpired(
   }
 }
 
-export async function handleSubscriptionResumed(
-  data: any,
-  userId: string,
-) {
+export async function handleSubscriptionResumed(data: any, userId: string) {
   const transaction = await sequelize.transaction();
 
   try {
@@ -482,14 +443,14 @@ export async function handleSubscriptionResumed(
     } else {
       await transaction.rollback();
     }
-   } catch (error) {
-     await transaction.rollback();
-     logError(error instanceof Error ? error : new Error(String(error)), {
-       file: "payment.ts",
-       function: "handleSubscriptionResumed",
-       line: 425,
-     });
-   }
+  } catch (error) {
+    await transaction.rollback();
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      file: "payment.ts",
+      function: "handleSubscriptionResumed",
+      line: 425,
+    });
+  }
 }
 
 export async function handleSubscriptionPaymentSuccess(
@@ -520,7 +481,7 @@ export async function handleSubscriptionPaymentSuccess(
       const paymentTxnId = orderId
         ? `payment-${orderId}`
         : `payment-${subscriptionId}`;
-      
+
       const existingPaymentTxn = await Transaction.findOne({
         where: { providerTransactionId: paymentTxnId },
         transaction,
@@ -598,40 +559,4 @@ export async function assignFreePlan(
     },
     { transaction: options?.transaction },
   );
-}
-
-export async function getActiveSubscription(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
-  try {
-    const decoded = req.user;
-    const userId = decoded?.sub;
-
-    const subscription = await Subscription.findOne({
-      where: { userId, isActive: true },
-      include: [
-        {
-          model: Plan,
-          attributes: [
-            "name",
-            "displayName",
-            "variantId",
-            "priceMonthly",
-            "priceYearly",
-            "maxResumeUploads",
-            "maxApplicationsPerMonth",
-            "maxStorageMb",
-            "allowJobImageUploads",
-            "allowAdvancedExports",
-          ],
-        },
-      ],
-    });
-
-    sendSuccess(res, 200, "success", "FETCH_SUCCESS", subscription);
-  } catch (error) {
-    next(error);
-  }
 }

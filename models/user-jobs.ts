@@ -112,7 +112,6 @@ export const UserJob = sequelize.define<JobModel>("user_job", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-
   jobPostedHumanReadable: {
     type: DataTypes.STRING,
     allowNull: true,

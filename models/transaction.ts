@@ -20,7 +20,9 @@ interface TransactionModel extends Model<
   amount: number;
   currency: CreationOptional<string>;
   description: string | null;
-  status: CreationOptional<"pending" | "paid" | "failed" | "refunded" | "disputed" | "cancelled">;
+  status: CreationOptional<
+    "pending" | "paid" | "failed" | "refunded" | "disputed" | "cancelled"
+  >;
   paidAt: Date | null;
   failedAt: Date | null;
   refundedAt: Date | null;
@@ -82,7 +84,14 @@ export const Transaction = sequelize.define<TransactionModel>(
       type: DataTypes.STRING(255),
     },
     status: {
-      type: DataTypes.ENUM("pending", "paid", "failed", "refunded", "disputed"),
+      type: DataTypes.ENUM(
+        "pending",
+        "paid",
+        "failed",
+        "refunded",
+        "disputed",
+        "cancelled",
+      ),
       defaultValue: "pending",
     },
     paidAt: {
