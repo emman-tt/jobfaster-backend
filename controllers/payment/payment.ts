@@ -51,6 +51,55 @@ export async function CreateCheckout(
       return sendError(res, "USER_NOT_FOUND", 404);
     }
 
+    const existingSub = await Subscription.findOne({
+      where: { userId, isActive: true },
+    });
+
+    if (existingSub?.lemonSqueezyId) {
+      const response = await fetch(
+        `https://api.lemonsqueezy.com/v1/subscriptions/${existingSub.lemonSqueezyId}`,
+        {
+          method: "PATCH",
+          headers: lemonSqueezyConfig.getHeaders(),
+          body: JSON.stringify({
+            data: {
+              type: "subscriptions",
+              id: existingSub.lemonSqueezyId,
+              attributes: {
+                variant_id: variantId,
+                invoice_immediately: true,
+              },
+            },
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        logError(
+          new Error(`Lemon Squeezy plan update failed: ${response.status}`),
+          {
+            file: "payment.ts",
+            function: "CreateCheckout",
+            line: 72,
+          },
+        );
+        return sendError(res, "UPDATE_FAILED", 500);
+      }
+
+      const updateUrl = data.data.attributes.urls?.update_payment_method;
+
+      return res.status(200).json({
+        status: "success",
+        message: "SUBSCRIPTION_UPDATED",
+        data: {
+          updateUrl,
+          variantKey,
+        },
+      });
+    }
+
     const response = await fetch("https://api.lemonsqueezy.com/v1/checkouts", {
       method: "POST",
       headers: lemonSqueezyConfig.getHeaders(),
@@ -228,6 +277,47 @@ export async function handleSubscriptionCreated(
       function: "handleSubscriptionCreated",
       line: 222,
     });
+  }
+}
+
+const variantIdToKey: Record<string, string> = Object.fromEntries(
+  Object.entries(VARIANTS).map(([key, id]) => [id, key]),
+);
+
+export async function handleSubscriptionPlanChanged(
+  data: any,
+  userId: string,
+  _variantKey: string,
+) {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const numericVariantId = String(data.attributes?.variant_id ?? "");
+    const resolvedVariantKey = variantIdToKey[numericVariantId] || _variantKey;
+
+    const newPlan = await getPlanByVariantKey(resolvedVariantKey);
+    if (!newPlan) {
+      await transaction.rollback();
+      return;
+    }
+
+    console.log("new plan", newPlan);
+
+    await Subscription.update(
+      {
+        planId: newPlan.id,
+      },
+      {
+        where: {
+          userId,
+        },
+        transaction,
+      },
+    );
+
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
   }
 }
 

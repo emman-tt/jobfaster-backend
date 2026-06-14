@@ -24,7 +24,8 @@ export type ErrorMessage =
   | "UPLOAD_LIMIT_EXCEEDED"
   | "APPLICATION_LIMIT_EXCEEDED"
   | "STORAGE_LIMIT_EXCEEDED"
-  | "FEATURE_NOT_ALLOWED";
+  | "FEATURE_NOT_ALLOWED"
+  | "UPDATE_FAILED";
 
 export type SuccessMessage =
   | "LOGIN_SUCCESS"

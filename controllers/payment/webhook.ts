@@ -8,6 +8,7 @@ import {
   handleSubscriptionExpired,
   handleSubscriptionResumed,
   handleSubscriptionPaymentSuccess,
+  handleSubscriptionPlanChanged,
 } from "./payment";
 import { ProcessedEvent } from "../../models/processed-event";
 import { logError, logInfo } from "../../utils/logger.js";
@@ -128,7 +129,6 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
       }
       throw err;
     }
-
     switch (eventName) {
       case "subscription_created":
         logInfo("Webhook received", {
@@ -137,6 +137,14 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
           variantKey,
         });
         await handleSubscriptionCreated(webhook.data, userId, variantKey);
+        break;
+      case "subscription_plan_changed":
+        logInfo("Webhook received", {
+          event: "subscription_plan_changed",
+          userId,
+          variantKey,
+        });
+        await handleSubscriptionPlanChanged(webhook.data, userId, variantKey);
         break;
       case "subscription_updated":
         logInfo("Webhook received", {
