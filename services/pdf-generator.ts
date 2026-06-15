@@ -25,19 +25,6 @@ export async function generatePDFFromHTML(html: string, name: string): Promise<{
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=794">
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script>
-          tailwind.config = {
-            theme: {
-              extend: {
-                fontFamily: {
-                  'satoshi': ['Inter', 'sans-serif'],
-                  'IBM': ['Inter', 'sans-serif'],
-                },
-              },
-            },
-          }
-        </script>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           @page { size: A4; margin: 0; }

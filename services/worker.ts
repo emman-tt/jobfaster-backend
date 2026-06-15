@@ -7,6 +7,7 @@ import { File } from "../models/file";
 import { sequelize } from "../database/pool";
 import { Activity } from "../models/activity";
 import { UserJob } from "../models/user-jobs";
+import { Subscription } from "../models/subscription";
 import { v4 as uuidv4 } from "uuid";
 import {
   createInMemoryQueue,
@@ -226,6 +227,12 @@ export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
       },
       { transaction: t },
     );
+
+    await Subscription.increment("applicationsThisMonth", {
+      by: 1,
+      where: { userId, isActive: true },
+      transaction: t,
+    });
 
     await t.commit();
 

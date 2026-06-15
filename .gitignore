@@ -40,3 +40,5 @@ migrations/20260507000000-add-fileId-to-user-jobs.cjs
 migrations/20260507100000-update-user-jobs-allowNull.cjs
 migrations/20260509000000-create-settings.cjs
 scripts/add-variant-id.ts
+migrations/20260614-add-unique-active-subscription-index.cjs
+migrations/20260614-rename-max-applications-week-to-month.cjs

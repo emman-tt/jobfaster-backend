@@ -7,7 +7,7 @@ import { Plan } from "../../models/plans";
 import { Subscription } from "../../models/subscription";
 import { Transaction } from "../../models/transaction";
 import { sequelize } from "../../database/pool";
-import { Transaction as SequelizeTransaction } from "sequelize";
+import { Transaction as SequelizeTransaction, UniqueConstraintError } from "sequelize";
 import { lemonSqueezyConfig } from "../../services/payment";
 import "dotenv/config";
 
@@ -631,7 +631,7 @@ export async function assignFreePlan(
   }
 
   const existing = await Subscription.findOne({
-    where: { userId },
+    where: { userId, isActive: true },
     transaction: options?.transaction,
   });
 
@@ -639,14 +639,21 @@ export async function assignFreePlan(
     return;
   }
 
-  await Subscription.create(
-    {
-      userId,
-      planId: freePlan.id,
-      isActive: true,
-      status: "free",
-      startDate: new Date(),
-    },
-    { transaction: options?.transaction },
-  );
+  try {
+    await Subscription.create(
+      {
+        userId,
+        planId: freePlan.id,
+        isActive: true,
+        status: "free",
+        startDate: new Date(),
+      },
+      { transaction: options?.transaction },
+    );
+  } catch (err) {
+    if (err instanceof UniqueConstraintError) {
+      return;
+    }
+    throw err;
+  }
 }

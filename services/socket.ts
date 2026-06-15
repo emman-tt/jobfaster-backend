@@ -16,6 +16,11 @@ export const socket = new WebSocketServer({ port: 5000 });
 import { authenticateSocket } from "../middleware/authenticate.js";
 const clients = new Map<string, WebSocket>();
 import { Request } from "express";
+import {
+  getSubscriptionWithPlan,
+  checkApplicationLimit,
+  PlanLimitError,
+} from "./planEnforcer.js";
 socket.on("connection", async (ws: WebSocket, req: Request) => {
   const userId = authenticateSocket(req, ws);
 
@@ -55,6 +60,27 @@ socket.on("connection", async (ws: WebSocket, req: Request) => {
   });
 });
 
+async function enforceApplicationLimit(
+  userId: string,
+  ws: WebSocket,
+  type: string,
+) {
+  const sub = await getSubscriptionWithPlan(userId);
+  if (!sub) return true;
+  const plan = sub.get("Plan") as any;
+  if (!plan) return true;
+  try {
+    checkApplicationLimit(sub, plan);
+    return true;
+  } catch (err) {
+    if (err instanceof PlanLimitError) {
+      sendSocketError(ws, "APPLICATION_LIMIT_EXCEEDED", err.message, type);
+      return false;
+    }
+    throw err;
+  }
+}
+
 async function handleJobApply(
   data: any,
   type: "JOB_APPLY" = "JOB_APPLY",
@@ -70,6 +96,9 @@ async function handleJobApply(
   if (!resume || !downloadUrl || !jobDescription || !hiringEmail || !fileId) {
     return sendSocketError(ws, "VALIDATION_ERROR", "FIELDS_ARE_MISSING", type);
   }
+
+  const allowed = await enforceApplicationLimit(userId, ws, type);
+  if (!allowed) return;
 
   let aiQueue = getAiQueue();
   let retries = 0;

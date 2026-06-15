@@ -76,7 +76,7 @@ export const Plan = sequelize.define<PlanModel>(
     maxApplicationsPerMonth: {
       type: DataTypes.INTEGER,
       defaultValue: 50,
-      field: "max_applications_per_week",
+      field: "max_applications_per_month",
     },
     maxActivityDays: {
       type: DataTypes.INTEGER,
