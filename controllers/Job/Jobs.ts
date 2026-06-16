@@ -7,7 +7,10 @@ const { RAPID_API_KEY } = process.env;
 export async function getJobs(req: Request, res: Response, next: NextFunction) {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 12));
+    const limit = Math.min(
+      50,
+      Math.max(1, parseInt(req.query.limit as string) || 12),
+    );
     const offset = (page - 1) * limit;
 
     const { rows: jobs, count: total } = await Job.findAndCountAll({
@@ -79,7 +82,6 @@ export async function fetchJobs() {
         jobHighlights: job.job_highlights || {},
       });
     }
-
   } catch (error) {
     console.log(error);
   }

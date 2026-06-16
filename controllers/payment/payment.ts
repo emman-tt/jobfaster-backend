@@ -7,7 +7,10 @@ import { Plan } from "../../models/plans";
 import { Subscription } from "../../models/subscription";
 import { Transaction } from "../../models/transaction";
 import { sequelize } from "../../database/pool";
-import { Transaction as SequelizeTransaction, UniqueConstraintError } from "sequelize";
+import {
+  Transaction as SequelizeTransaction,
+  UniqueConstraintError,
+} from "sequelize";
 import { lemonSqueezyConfig } from "../../services/payment";
 import "dotenv/config";
 
@@ -242,24 +245,50 @@ export async function handleSubscriptionCreated(
       );
       subscription = existingSubscription;
     } else {
-      subscription = await Subscription.create(
-        {
-          userId,
-          planId,
-          lemonSqueezyId: String(subscriptionId),
-          lemonSqueezyOrderId: orderId ? String(orderId) : null,
-          isActive: status === "active" || status === "on_trial",
-          status,
-          startDate: new Date(),
-          endDate: endsAt ? new Date(endsAt) : null,
-          renewsAt: renewsAt ? new Date(renewsAt) : null,
-          trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
-          cardBrand: cardBrand || null,
-          cardLastFour: cardLastFour || null,
-          updatePaymentMethodUrl: updatePaymentMethodUrl || null,
-        },
-        { transaction },
-      );
+      const activeSub = await Subscription.findOne({
+        where: { userId, isActive: true },
+        transaction,
+      });
+
+      if (activeSub) {
+        await activeSub.update(
+          {
+            planId,
+            lemonSqueezyId: String(subscriptionId),
+            lemonSqueezyOrderId: orderId ? String(orderId) : null,
+            isActive: status === "active" || status === "on_trial",
+            status,
+            startDate: new Date(),
+            endDate: endsAt ? new Date(endsAt) : null,
+            renewsAt: renewsAt ? new Date(renewsAt) : null,
+            trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
+            cardBrand: cardBrand || null,
+            cardLastFour: cardLastFour || null,
+            updatePaymentMethodUrl: updatePaymentMethodUrl || null,
+          },
+          { transaction },
+        );
+        subscription = activeSub;
+      } else {
+        subscription = await Subscription.create(
+          {
+            userId,
+            planId,
+            lemonSqueezyId: String(subscriptionId),
+            lemonSqueezyOrderId: orderId ? String(orderId) : null,
+            isActive: status === "active" || status === "on_trial",
+            status,
+            startDate: new Date(),
+            endDate: endsAt ? new Date(endsAt) : null,
+            renewsAt: renewsAt ? new Date(renewsAt) : null,
+            trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
+            cardBrand: cardBrand || null,
+            cardLastFour: cardLastFour || null,
+            updatePaymentMethodUrl: updatePaymentMethodUrl || null,
+          },
+          { transaction },
+        );
+      }
       created = true;
     }
 
@@ -301,8 +330,7 @@ export async function handleSubscriptionPlanChanged(
       return;
     }
 
-    console.log("new plan", newPlan);
-
+ 
     await Subscription.update(
       {
         planId: newPlan.id,
