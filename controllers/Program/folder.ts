@@ -5,6 +5,8 @@ import { Folder } from "../../models/folder";
 import { sendSuccess } from "../../utils/sendSuccess";
 import { v4 as uuidv4 } from "uuid";
 import { Activity } from "../../models/activity";
+import { Subscription } from "../../models/subscription";
+
 export async function UploadFolder(
   req: Request,
   res: Response,
@@ -50,6 +52,11 @@ export async function UploadFolder(
       {
         transaction: t,
       },
+    );
+
+    await Subscription.increment(
+      { currentStorageBytes: 4096 },
+      { where: { userId }, transaction: t },
     );
 
     sendSuccess(res, 200, undefined, "UPLOAD_SUCCESS");

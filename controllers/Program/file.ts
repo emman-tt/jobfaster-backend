@@ -1,14 +1,11 @@
-import * as PdfParse from "pdf-parse-new";
 import { v2 as cloudinary } from "cloudinary";
 import { NextFunction, Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { sendSuccess } from "../../utils/sendSuccess";
 import { sendError } from "../../utils/sendError";
-
 import { Pointer } from "../../models/pointer";
 import { Subscription } from "../../models/subscription";
 import { Plan } from "../../models/plans";
-
 import { sequelize } from "../../database/pool";
 import { File } from "../../models/file";
 import { Activity } from "../../models/activity";
@@ -38,7 +35,6 @@ interface UploadResult {
   download: string;
 }
 
-
 export async function uploadResume(
   req: Request,
   res: Response,
@@ -53,7 +49,6 @@ export async function uploadResume(
     const subscription = await Subscription.findOne({
       where: { userId, isActive: true },
       include: [{ model: Plan }],
-      transaction: t,
     });
 
     if (subscription) {

@@ -7,6 +7,7 @@ import { Folder } from "../../models/folder";
 import { sendError } from "../../utils/sendError";
 import { sequelize } from "../../database/pool";
 import { Activity } from "../../models/activity";
+import { Subscription } from "../../models/subscription";
 
 export async function deleteProgram(
   req: Request,
@@ -19,33 +20,52 @@ export async function deleteProgram(
     const userId = decoded?.sub as string;
     const programId = req.params.id as string;
 
-    const progarm = await Pointer.findByPk(programId);
+    const progarm = await Pointer.findByPk(programId, {
+      include: [
+        { model: File, as: "file" },
+        { model: Folder, as: "folder" },
+      ],
+    });
 
     if (progarm) {
       await progarm.destroy({ transaction: t });
-      progarm.type == "FILE"
-        ? await Activity.create(
-            {
-              userId,
-              message: `Deleted a  ${progarm?.type.toLowerCase()}   `,
-              type: "FILE",
-            },
-            { transaction: t },
-          )
-        : await Activity.create(
-            {
-              userId,
-              message: `Deleted a  ${progarm?.type.toLowerCase()} `,
-              type: "FOLDER",
-            },
-            { transaction: t },
-          );
+
+      if (progarm.type == "FILE") {
+        await Activity.create(
+          {
+            userId,
+            message: `Deleted a  ${progarm?.type.toLowerCase()}   `,
+            type: "FILE",
+          },
+          { transaction: t },
+        );
+
+        await Subscription.decrement(
+          { currentStorageBytes: progarm.file.metaData.size },
+          { where: { userId }, transaction: t },
+        );
+      } else {
+        await Activity.create(
+          {
+            userId,
+            message: `Deleted a  ${progarm?.type.toLowerCase()} `,
+            type: "FOLDER",
+          },
+          { transaction: t },
+        );
+
+        await Subscription.decrement(
+          { currentStorageBytes: progarm.folder.metaData.size },
+          { where: { userId }, transaction: t },
+        );
+      }
     }
 
     await t.commit();
 
     sendSuccess(res, 200, "success", "DELETE_SUCCESS");
   } catch (error) {
+    console.log(error);
     await t.rollback();
     next(error);
   }
