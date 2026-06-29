@@ -8,8 +8,7 @@ const {
   DEVELOPMENT,
 } = process.env;
 
-
-
+const FRONTEND_URLS = ["http://localhost:5173", "http://localhost:5174"];
 
 export const auth = betterAuth({
   baseURL: BETTER_AUTH_URL,
@@ -18,10 +17,9 @@ export const auth = betterAuth({
     google: {
       clientId: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
-      
     },
   },
-  trustedOrigins: [FRONTEND_URL],
+  trustedOrigins: FRONTEND_URLS,
   emailAndPassword: {
     enabled: false,
   },

@@ -126,7 +126,7 @@ export async function deleteJobTrack(
   try {
     const decoded = req.user;
     const userId = decoded?.sub;
-    const jobId = req.body.job?.jobId;
+    const jobId = req.params.jobId;
 
     await UserJob.destroy({
       where: {

@@ -8,7 +8,7 @@ import {
   saveJobTrack,
   updateJobTrack,
 } from "../../controllers/Job/track";
-import { body, validationResult } from "express-validator";
+import { body, param, query, validationResult } from "express-validator";
 import { NextFunction, Request, Response } from "express";
 
 const validateSaveJob = [
@@ -38,7 +38,7 @@ const validateUpdateJob = [
   },
 ];
 const validateDeleteJob = [
-  body("job.jobId").notEmpty().withMessage("Job id required"),
+  param("jobId").notEmpty().withMessage("Job id required"),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -54,6 +54,6 @@ router.get("/", authenticate, getJobs);
 router.get("/track", authenticate, getJobTrack);
 router.post("/track", validateSaveJob, authenticate, saveJobTrack);
 router.patch("/track", validateUpdateJob, authenticate, updateJobTrack);
-router.delete("/track", validateDeleteJob, authenticate, deleteJobTrack);
+router.delete("/track/:jobId", validateDeleteJob, authenticate, deleteJobTrack);
 
 export const jobRouter = router;
