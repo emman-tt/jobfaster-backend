@@ -19,49 +19,6 @@ ${data.resumeText}
 - Tone: ${data.tone === 'Formal' ? 'Formal and professional' : 'Confident but conversational'}
 - Cover Letter Attached: ${data.includeCoverLetter ? 'Yes' : 'No'}
 
-## TEMPLATE SELECTION
-You MUST choose ONE template that best matches the job description and resume. Include your selection in the response.
-
-1. **classic** - Traditional serif fonts. Best for: banking, law, government, conservative industries.
-
-2. **modern** - Contemporary with whitespace. Best for: tech startups, creative, marketing, design.
-
-3. **executive** - Powerful for leaders. Best for: C-suite, directors, managers, corporate executives.
-
-4. **technical** - Monospace typography. Best for: software engineers, IT, DevOps, data scientists.
-
-5. **ats** - Clean, scannable. Best for: mass applications, large corporations.
-
-6. **academic** - Serif CV-style. Best for: researchers, educators, academic positions.
-
-7. **creative** - Gold decorative accents, artistic layout. Best for: designers, artists, creative professionals.
-
-8. **compact** - Efficient one-page optimized. Best for: early-career, concise applications, 1-2 years experience.
-
-9. **startup** - Metrics and traction focused. Best for: founders, startup employees, venture capital applications.
-
-10. **corporate** - Formal business-oriented with blue accents. Best for: Fortune 500, banking, consulting, legal.
-
-11. **freelance** - Project and client focused. Best for: freelancers, contractors, consultants, gig economy.
-
-12. **elegant** - Sophisticated minimal with decorative lines. Best for: luxury industries, fashion, publishing, high-end services.
-
-13. **military** - Structured achievement-focused. Best for: military veterans transitioning to civilian, leadership roles, government.
-
-14. **sales** - Results-oriented with metrics emphasis. Best for: sales professionals, marketers, business development, account executives.
-
-15. **healthcare** - Clean professional with medical blue. Best for: doctors, nurses, pharmacists, healthcare administrators, clinical roles.
-
-16. **design** - Visual-focused for designers. Best for: UI/UX designers, graphic designers, creative directors, brand designers.
-
-17. **graduate** - Education-first format. Best for: recent graduates, students, internships, entry-level positions.
-
-18. **international** - European-style CV with sidebar. Best for: international applications, global companies, European job markets.
-
-19. **bold** - Eye-catching high-impact. Best for: creative industries, standing out, creative roles where personality matters.
-
-20. **sidebar** - Classic two-column sidebar layout. Best for: professional clean layout, easy scanning, balanced structure.
-
 ## TASK 1 — RESUME TAILORING RULES
 
 1. **Parse first** — Extract all resume information from the raw text before tailoring. Infer structure from context.
@@ -108,6 +65,30 @@ You MUST choose ONE template that best matches the job description and resume. I
 
 9. **Attachment note** — "Please find my CV${data.includeCoverLetter ? ' and cover letter' : ''} attached."
 
+## TEMPLATE SELECTION
+Based on the job description above (industry, role, seniority) and the resume content, choose the SINGLE best matching template. Do NOT default to "technical" — match the actual industry.
+
+1. **ats** - Clean, scannable. Best for: mass applications, large corporations.
+2. **classic** - Traditional serif fonts. Best for: banking, law, government, conservative industries.
+3. **modern** - Contemporary with whitespace. Best for: tech startups, creative, marketing, design.
+4. **corporate** - Formal business-oriented. Best for: Fortune 500, banking, consulting, legal.
+5. **executive** - Powerful for leaders. Best for: C-suite, directors, managers, corporate executives.
+6. **compact** - Efficient one-page optimized. Best for: early-career, concise applications.
+7. **academic** - Serif CV-style. Best for: researchers, educators, academic positions.
+8. **creative** - Gold decorative accents, artistic layout. Best for: designers, artists, creative professionals.
+9. **startup** - Metrics and traction focused. Best for: founders, startup employees, venture capital.
+10. **freelance** - Project and client focused. Best for: freelancers, contractors, consultants.
+11. **sidebar** - Classic two-column sidebar layout. Best for: professional clean layout, easy scanning.
+12. **elegant** - Sophisticated minimal with decorative lines. Best for: luxury, fashion, publishing.
+13. **sales** - Results-oriented with metrics emphasis. Best for: sales, marketing, business development.
+14. **healthcare** - Clean professional. Best for: doctors, nurses, pharmacists, clinical roles.
+15. **design** - Visual-focused. Best for: UI/UX designers, graphic designers, creative directors.
+16. **technical** - Monospace typography. Best for: software engineers, IT, DevOps, data scientists.
+17. **graduate** - Education-first. Best for: recent graduates, students, internships, entry-level.
+18. **international** - European-style CV with sidebar. Best for: international applications, global companies.
+19. **military** - Structured achievement-focused. Best for: military veterans transitioning to civilian.
+20. **bold** - Eye-catching high-impact. Best for: creative industries, standing out.
+
 ## THINGS TO NEVER DO
 - You MUST choose a template from the list above — do not skip this
 - Do not invent metrics not inferable from the original resume text
@@ -124,7 +105,7 @@ Must be directly parseable by JSON.parse(). Start with { and end with }.
 Do NOT include fullEmail — assembled in code.
 
 {
-  "template": "classic|modern|executive|technical|ats|academic|creative|compact|startup|corporate|freelance|elegant|military|sales|healthcare|design|graduate|international|bold|sidebar",
+  "template": "ats|classic|modern|corporate|executive|compact|academic|creative|startup|freelance|sidebar|elegant|sales|healthcare|design|technical|graduate|international|military|bold",
   "reason": "Brief explanation of why this template was chosen",
   "resume": {
     "personal": {
@@ -147,7 +128,7 @@ Do NOT include fullEmail — assembled in code.
           "location": "",
           "startYear": "",
           "endYear": "",
-          "accomplishments": []
+          "accomplishments": [{ "id": 1, "text": "" }]
         }
       ],
       "projects": [
@@ -155,7 +136,7 @@ Do NOT include fullEmail — assembled in code.
           "id": 1,
           "name": "",
           "description": "",
-          "techStack": [],
+          "techStack": [{ "id": 1, "name": "" }],
           "link": "",
           "github": ""
         }
@@ -182,7 +163,7 @@ Do NOT include fullEmail — assembled in code.
       ]
     },
     "credentials": {
-      "skills": [],
+      "skills": [{ "id": 1, "name": "" }],
       "certificates": [
         {
           "name": "",

@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { applyJobPromptUpload } from "../../prompts/jobPrompt";
-import { uploadResumePrompt } from "../../prompts/extractPrompt";
+
 import Groq from "groq-sdk";
 
 const groq = new Groq({

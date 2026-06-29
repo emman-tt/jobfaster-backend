@@ -27,7 +27,10 @@ let mailWorker: Worker | ReturnType<typeof createInMemoryWorker> | null = null;
 let connection: Redis | null = null;
 
 if (useInMemory) {
-  logInfo("Using in-memory queue (Redis disabled)", { disabled: !!DISABLE_REDIS, noRedisUrl: !REDIS_URL });
+  logInfo("Using in-memory queue (Redis disabled)", {
+    disabled: !!DISABLE_REDIS,
+    noRedisUrl: !REDIS_URL,
+  });
 
   aiQueue = createInMemoryQueue("ai", {
     defaultJobOptions: {
@@ -72,7 +75,10 @@ if (useInMemory) {
     },
     retryStrategy: (times) => {
       if (times > 4) {
-        logInfo("Redis unreachable after multiple attempts, retrying every 30s", { attempts: times });
+        logInfo(
+          "Redis unreachable after multiple attempts, retrying every 30s",
+          { attempts: times },
+        );
         return 30000;
       }
       logInfo("Redis retry attempt", { attempt: times });
@@ -294,12 +300,17 @@ async function handleJobApply(
   userId: string,
 ) {
   const parsed = parseResponse(response);
+
+  console.log(parsed);
   const resumeJSON = parsed.data.resume;
 
-  await File.update(
-    { parsedContent: resumeJSON },
-    { where: { id: fileId } },
-  );
+  console.log(`
+    File details,
+   fileid : ${fileId}
+   content: ${resumeJSON}
+    `);
+
+  await File.update({ parsedContent: resumeJSON }, { where: { id: fileId } });
 
   const jobTitle = resumeJSON.personal.contactDetails.jobTitle;
 
@@ -371,7 +382,7 @@ export const onMailWorkerReady = (
 ): (() => void) => {
   const mq = getMailQueue();
   const mw = getMailWorker();
-  
+
   if (mq && mw) {
     callback(mq, mw);
     return () => {};
@@ -398,7 +409,7 @@ export const onAiWorkerReady = (
 ): (() => void) => {
   const aq = getAiQueue();
   const aw = getAiWorker();
-  
+
   if (aq && aw) {
     callback(aq, aw);
     return () => {};

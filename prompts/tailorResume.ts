@@ -82,9 +82,9 @@ Return ONLY valid JSON. No explanation, no markdown fences. Start with { and end
   "education": [
     { "institution": "", "degree": "", "startYear": "", "endYear": "", "gpa": "" }
   ],
-  "skills": [],
+  "skills": [{ "id": 1, "name": "" }],
   "experience": [
-    { "company": "", "jobTitle": "", "startYear": "", "endYear": "", "location": "", "points": [] }
+    { "company": "", "jobTitle": "", "startYear": "", "endYear": "", "location": "", "accomplishments": [{ "id": 1, "text": "" }] }
   ]
 }
 `.trim();
