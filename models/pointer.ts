@@ -6,16 +6,19 @@ import {
   InferCreationAttributes,
   CreationOptional,
 } from "sequelize";
-
+import { File } from "../models/file";
+import { Folder } from "../models/folder";
 interface PointerModel extends Model<
   InferAttributes<PointerModel>,
   InferCreationAttributes<PointerModel>
 > {
   id: CreationOptional<string>;
   userId: string;
-  type: "FILE"| "FOLDER";
+  type: "FILE" | "FOLDER";
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;
+  file?: InstanceType<typeof File>;
+  folder?: InstanceType<typeof Folder>;
 }
 
 export const Pointer = sequelize.define<PointerModel>("pointer", {
@@ -23,7 +26,7 @@ export const Pointer = sequelize.define<PointerModel>("pointer", {
     type: DataTypes.UUID,
     allowNull: false,
     defaultValue: DataTypes.UUIDV4,
-    primaryKey:true
+    primaryKey: true,
   },
   userId: {
     type: DataTypes.UUID,

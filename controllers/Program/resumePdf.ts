@@ -9,6 +9,7 @@ import { File } from "../../models/file";
 import { Activity } from "../../models/activity";
 import { sequelize } from "../../database/pool";
 import { v4 as uuidv4 } from "uuid";
+import { Op } from "sequelize";
 import {
   PlanLimitError,
   checkResumeUploadLimit,
@@ -96,6 +97,7 @@ export async function saveResumePDF(
     await t.commit();
 
     return sendSuccess(res, 200, undefined, "RESUME_CREATED", {
+      id,
       url: result.url,
       downloadUrl: result.downloadUrl,
       name,
@@ -105,6 +107,59 @@ export async function saveResumePDF(
     if (error instanceof PlanLimitError) {
       return sendError(res, error.code as any, 403);
     }
+    next(error);
+  }
+}
+
+export async function updateResumePDF(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const { html, name } = req.body;
+    const fileId = req.params.id as string;
+    const decoded = req?.user;
+    const userId = decoded?.sub as string;
+
+    if (!html || !name) {
+      return sendError(res, "NO_FILE", 400, "failed");
+    }
+
+    const pointer = await Pointer.findOne({
+      where: { id: fileId, userId, type: "FILE" },
+      include: [{ model: File, as: "file" }],
+    });
+
+    if (!pointer || !pointer.file) {
+      return sendError(res, "NOT_FOUND", 404, "failed");
+    }
+
+    const result = await generatePDFFromHTML(html, name);
+
+    await pointer.file.update({
+      metaData: {
+        ...pointer.file.metaData,
+        name,
+        size: result.size,
+        content: result.url,
+        downloadUrl: result.downloadUrl,
+      },
+    });
+
+    await Activity.create({
+      userId,
+      type: "FILE",
+      message: `Updated resume - ${name}`,
+    });
+
+    return sendSuccess(res, 200, undefined, "RESUME_UPDATED", {
+      id: fileId,
+      url: result.url,
+      downloadUrl: result.downloadUrl,
+      name,
+    });
+  } catch (error) {
     next(error);
   }
 }

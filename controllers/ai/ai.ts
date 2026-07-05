@@ -17,7 +17,7 @@ interface Response {
 async function callAi(prompt: string): Promise<Response> {
   try {
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
       max_tokens: 4000,
@@ -49,4 +49,3 @@ export async function jobApply(data: ApplyJobData): Promise<Response> {
   const promt = applyJobPromptUpload(data);
   return await callAi(promt);
 }
-

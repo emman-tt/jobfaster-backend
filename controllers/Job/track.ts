@@ -2,6 +2,7 @@ import { Response, Request, NextFunction } from "express";
 import { UserJob } from "../../models/user-jobs";
 import { Subscription } from "../../models/subscription";
 import { Plan } from "../../models/plans";
+import { Activity } from "../../models/activity";
 import { sendSuccess } from "../../utils/sendSuccess";
 import { sendError } from "../../utils/sendError";
 import { sequelize } from "../../database/pool";
@@ -105,12 +106,24 @@ export async function updateJobTrack(
     const status = job.status;
     const jobId = job.jobId;
 
+    const existing = await UserJob.findByPk(jobId);
+
     await UserJob.update(
       {
         status: status,
       },
       { where: { userId: userId, id: jobId } },
     );
+
+    if (existing && existing.status !== status) {
+      const title = existing.jobTitle || "Unknown position";
+      const company = existing.employerName || "Unknown company";
+      await Activity.create({
+        userId,
+        type: "JOB",
+        message: `Updated job status from ${existing.status} to ${status} for ${title} at ${company}`,
+      });
+    }
 
     return sendSuccess(res, 200, "success", "JOB_UPDATED", null);
   } catch (error) {

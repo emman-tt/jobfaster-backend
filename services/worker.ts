@@ -301,14 +301,7 @@ async function handleJobApply(
 ) {
   const parsed = parseResponse(response);
 
-  console.log(parsed);
   const resumeJSON = parsed.data.resume;
-
-  console.log(`
-    File details,
-   fileid : ${fileId}
-   content: ${resumeJSON}
-    `);
 
   await File.update({ parsedContent: resumeJSON }, { where: { id: fileId } });
 
@@ -316,7 +309,7 @@ async function handleJobApply(
 
   await Activity.create({
     type: "FILE",
-    message: `Generated a tailored resume generated for ${jobTitle} `,
+    message: `Generated a tailored resume for ${jobTitle}`,
     userId: userId,
   });
 

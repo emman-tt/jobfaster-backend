@@ -34,7 +34,7 @@ export async function deleteProgram(
         await Activity.create(
           {
             userId,
-            message: `Deleted a  ${progarm?.type.toLowerCase()}   `,
+            message: `Deleted ${progarm?.type.toLowerCase()}`,
             type: "FILE",
           },
           { transaction: t },
@@ -48,7 +48,7 @@ export async function deleteProgram(
         await Activity.create(
           {
             userId,
-            message: `Deleted a  ${progarm?.type.toLowerCase()} `,
+            message: `Deleted ${progarm?.type.toLowerCase()}`,
             type: "FOLDER",
           },
           { transaction: t },
@@ -123,6 +123,53 @@ export async function getPrograms(
     const allPrograms = [...files, ...formatedFolders];
 
     sendSuccess(res, 200, "success", "FETCH_SUCCESS", allPrograms || []);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function renameProgram(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const programId = req.params.id as string;
+    const newName = req.body.name as string;
+    const program = await Pointer.findByPk(programId, {
+      include: [
+        { model: File, as: "file" },
+        { model: Folder, as: "folder" },
+      ],
+    });
+
+    if (!program) {
+      return sendError(res, "NOT_FOUND", 404, "failed");
+    }
+
+    if (program.type == "FILE") {
+      await File.update(
+        {
+          metaData: {
+            ...program.file!.metaData,
+            name: newName,
+          },
+        },
+        { where: { id: program.id } },
+      );
+    } else {
+      await Folder.update(
+        {
+          metaData: {
+            ...program.folder!.metaData,
+            name: newName,
+          },
+        },
+        { where: { id: program.id } },
+      );
+    }
+
+    sendSuccess(res, 200, "success", "UPDATE SUCCESS");
   } catch (error) {
     next(error);
   }

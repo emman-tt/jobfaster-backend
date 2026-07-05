@@ -2,7 +2,7 @@ import express, { NextFunction, Request, Response } from "express";
 const router = express.Router();
 import { upload } from "../../config/diskStorage";
 import { uploadResume } from "../../controllers/Program/file";
-import { saveResumePDF } from "../../controllers/Program/resumePdf";
+import { saveResumePDF, updateResumePDF } from "../../controllers/Program/resumePdf";
 import { authenticate } from "../../middleware/authenticate";
 import { body, check, param, query, validationResult } from "express-validator";
 import { sendError } from "../../utils/sendError";
@@ -11,6 +11,7 @@ import {
   deleteProgram,
   getPrograms,
   MoveFile,
+  renameProgram,
 } from "../../controllers/Program/Pointer";
 
 const validateUploadFile = [
@@ -80,6 +81,8 @@ const validateSaveFile = [
 router.get("/", authenticate, getPrograms);
 router.post("/file/upload", validateUploadFile, authenticate, uploadResume);
 router.post("/file/save", validateSaveFile, authenticate, saveResumePDF);
+router.patch("/file/:id", validateSaveFile, authenticate, updateResumePDF);
+router.patch("/rename/:id", authenticate, renameProgram);
 router.patch("/file", validateMoveFile, authenticate, MoveFile);
 router.post("/folder/:folderName", validateFolder, authenticate, UploadFolder);
 router.delete("/:id", validateDeleteFile, authenticate, deleteProgram);
