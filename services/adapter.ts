@@ -205,4 +205,4 @@ export const adapter = (config: CustomAdapterConfig = {}): CustomAdapter => {
   }) as unknown as CustomAdapter;
 };
 
-export type Adapter = typeof adapter;
+

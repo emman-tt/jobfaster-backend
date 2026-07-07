@@ -56,7 +56,7 @@ const validateMoveFile = [
   },
 ];
 
-const validateDeleteFile = [
+const validateDeleteProgram = [
   param("id").notEmpty().isUUID(),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
@@ -85,5 +85,5 @@ router.patch("/file/:id", validateSaveFile, authenticate, updateResumePDF);
 router.patch("/rename/:id", authenticate, renameProgram);
 router.patch("/file", validateMoveFile, authenticate, MoveFile);
 router.post("/folder/:folderName", validateFolder, authenticate, UploadFolder);
-router.delete("/:id", validateDeleteFile, authenticate, deleteProgram);
+router.delete("/:id", validateDeleteProgram, authenticate, deleteProgram);
 export const ProgramRouter = router;

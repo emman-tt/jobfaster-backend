@@ -6,11 +6,13 @@ export async function sendSocketError(
   type: "JOB_APPLY" | "JOB_MAIL" | string,
 ) {
   console.error("Failed to add job:", error);
-  ws.send(
-    JSON.stringify({
-      type: type,
-      status: "failed",
-      message: errorMessage,
-    }),
-  );
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(
+      JSON.stringify({
+        type: type,
+        status: "failed",
+        message: errorMessage,
+      }),
+    );
+  }
 }

@@ -45,6 +45,21 @@ export async function deleteProgram(
           { where: { userId }, transaction: t },
         );
       } else {
+        const folderHasFiles = await File.count({
+          where: {
+            folderId: progarm.id,
+          },
+        });
+
+        if (folderHasFiles) {
+          await File.destroy({
+            where: {
+              folderId: progarm.id,
+            },
+            transaction: t,
+          });
+        }
+
         await Activity.create(
           {
             userId,

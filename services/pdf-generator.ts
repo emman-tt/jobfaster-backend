@@ -7,6 +7,14 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+function addPageBreaks(html: string): string {
+  if (html.includes("page-break-before:")) return html;
+  return html.replace(
+    /<\/div>\s*(?=<div style="width:210mm)/g,
+    '</div><div style="page-break-before: always; height: 0;"></div>',
+  );
+}
+
 export async function generatePDFFromHTML(html: string, name: string): Promise<{
   url: string;
   downloadUrl: string;
@@ -19,27 +27,35 @@ export async function generatePDFFromHTML(html: string, name: string): Promise<{
 
   const page = await browser.newPage();
 
+  const brokenHtml = addPageBreaks(html);
+
   const fullHtml = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=794">
         <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          @page { size: A4; margin: 0; }
-          body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          html, body {
+            margin: 0;
+            padding: 0;
+            width: 210mm;
+            background: white;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          @page {
+            size: A4;
+            margin: 0;
+          }
         </style>
       </head>
-      <body>${html}</body>
+      <body>${brokenHtml}</body>
     </html>
   `;
 
   await page.setContent(fullHtml, {
     waitUntil: "networkidle0",
   });
-
-  await page.waitForSelector("[style*='padding']", { timeout: 5000 }).catch(() => {});
 
   const pdfBuffer = await page.pdf({
     format: "A4",

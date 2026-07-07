@@ -19,7 +19,7 @@ const formatEmailHtml = (
       
       <p style="margin-bottom: 16px; font-size: 16px;">${callToAction}</p>
       
-      <p style="margin-bottom: 24px; font-size: 14px; color: #666; font-style: italic;">${attachmentNote}</p>
+      <p style="margin-bottom: 16px; font-size: 16px;">${attachmentNote}</p>
       
       <div style="margin-top: 24px;">
         <p style="margin-bottom: 8px; font-size: 16px;">${signOff}</p>

@@ -147,11 +147,11 @@ export async function updateResumePDF(
       },
     });
 
-    await Activity.create({
-      userId,
-      type: "FILE",
-      message: `Updated resume - ${name}`,
-    });
+    // await Activity.create({
+    //   userId,
+    //   type: "FILE",
+    //   message: `Updated resume - ${name}`,
+    // });
 
     return sendSuccess(res, 200, undefined, "RESUME_UPDATED", {
       id: fileId,

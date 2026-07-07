@@ -257,7 +257,7 @@ export async function EmailProcessor(job: any): Promise<ProcessorResponse> {
       function: "EmailProcessor",
       line: 100,
     });
-    return handleError("failed", "JOB_APPLY", job, error.message, data);
+    return handleError("failed", "JOB_MAIL", job, error.message, data);
   }
 }
 

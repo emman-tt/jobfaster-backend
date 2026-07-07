@@ -5,7 +5,6 @@ import { sendSuccess } from "../utils/sendSuccess";
 import dotenv from "dotenv/config";
 import url from "url";
 import { UAParser } from "ua-parser-js";
-import crypto from "crypto";
 import { Token } from "../models/token";
 import WebSocket from "ws";
 export interface userPayload {
@@ -176,24 +175,4 @@ export async function RefreshAuth(
   }
 }
 
-interface FingerPrinting {
-  deviceName: string;
-  devicePrint: string;
-}
 
-function fingerPrint(ua: any): FingerPrinting {
-  const browser = ua.browser.name || "Browser";
-  const os = ua.os.name || "OS";
-  const device = `${browser} on ${os}`;
-
-  const fingerPrintString = `${browser}|${os}`;
-  const fingerPrintHash = crypto
-    .createHash("sha256")
-    .update(fingerPrintString)
-    .digest("hex");
-
-  return {
-    deviceName: device,
-    devicePrint: fingerPrintHash,
-  };
-}

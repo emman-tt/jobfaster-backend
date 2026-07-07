@@ -107,7 +107,15 @@ async function handleJobApply(
     await new Promise((r) => setTimeout(r, 1000));
     aiQueue = getAiQueue();
     retries++;
-    console.log(`Waiting for Redis... attempt ${retries}`);
+    if (retries % 5 === 0 && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          type: "QUEUE_STATUS",
+          status: "waiting",
+          message: `Waiting for background processor... (${retries}s)`,
+        }),
+      );
+    }
   }
 
   if (!aiQueue) {
@@ -198,7 +206,15 @@ async function handleJobMail(
     await new Promise((r) => setTimeout(r, 1000));
     mailQueue = getMailQueue();
     retries++;
-    console.log(`Waiting for Redis... attempt ${retries}`);
+    if (retries % 5 === 0 && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          type: "QUEUE_STATUS",
+          status: "waiting",
+          message: `Waiting for background processor... (${retries}s)`,
+        }),
+      );
+    }
   }
 
   if (!mailQueue) {
@@ -244,6 +260,7 @@ onMailWorkerReady((queue, worker) => {
       line: 192,
     });
     const message = JSON.stringify({
+      type: job?.name || "JOB_MAIL",
       status: "failed",
       jobId: job?.id,
       error: error.message,
@@ -286,6 +303,7 @@ onAiWorkerReady((queue, worker) => {
       line: 230,
     });
     const message = JSON.stringify({
+      type: job?.name || "JOB_APPLY",
       status: "failed",
       jobId: job?.id,
       error: error.message,
@@ -299,18 +317,17 @@ onAiWorkerReady((queue, worker) => {
   });
 });
 
-async function ParseOnlinePdf(fileUrl: string): Promise<string | undefined> {
-  try {
-    const response = await fetch(fileUrl);
-    const buffer = await response.arrayBuffer();
-    const result = await Parse(buffer);
-
-    return result?.text;
-  } catch (error) {
-    logError(error as Error, {
-      file: "socket.ts",
-      function: "ParseOnlinePdf",
-      line: 253,
-    });
+async function ParseOnlinePdf(fileUrl: string): Promise<string> {
+  const response = await fetch(fileUrl);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch PDF: ${response.status} ${response.statusText}`,
+    );
   }
+  const buffer = await response.arrayBuffer();
+  const result = await Parse(buffer);
+  if (!result?.text) {
+    throw new Error("PDF parsing returned empty text");
+  }
+  return result.text;
 }
