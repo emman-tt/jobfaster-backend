@@ -9,10 +9,30 @@ export class PlanLimitError extends Error {
 }
 
 export async function getSubscriptionWithPlan(userId: string) {
-  return await Subscription.findOne({
+  const subscription = await Subscription.findOne({
     where: { userId, isActive: true },
     include: [{ model: Plan }],
   });
+
+  if (subscription) {
+    await resetMonthlyCountersIfNeeded(subscription);
+  }
+
+  return subscription;
+}
+
+async function resetMonthlyCountersIfNeeded(subscription: InstanceType<typeof Subscription>) {
+  const now = new Date();
+  const lastReset = subscription.lastResetDate;
+  const lastMonth = lastReset ? new Date(lastReset) : null;
+
+  if (!lastMonth || lastMonth.getFullYear() !== now.getFullYear() || lastMonth.getMonth() !== now.getMonth()) {
+    await subscription.update({
+      resumeUploadsThisMonth: 0,
+      applicationsThisMonth: 0,
+      lastResetDate: now,
+    });
+  }
 }
 
 export function getPlan(subscription: InstanceType<typeof Subscription>) {

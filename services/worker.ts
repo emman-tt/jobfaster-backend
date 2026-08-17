@@ -301,6 +301,10 @@ async function handleJobApply(
 ) {
   const parsed = parseResponse(response);
 
+  if (!parsed.success) {
+    throw new Error(`Failed to parse AI response: ${parsed.data}`);
+  }
+
   const resumeJSON = parsed.data.resume;
 
   await File.update({ parsedContent: resumeJSON }, { where: { id: fileId } });

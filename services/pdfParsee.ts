@@ -7,6 +7,6 @@ export async function Parse(file: any) {
     const result = await parser.parse(buffer);
     return result;
   } catch (error) {
-    console.log(error);
+    return undefined;
   }
 }

@@ -54,14 +54,20 @@ export async function UploadFolder(
       },
     );
 
-    await Subscription.increment(
-      { currentStorageBytes: 4096 },
-      { where: { userId }, transaction: t },
-    );
+    const subscription = await Subscription.findOne({
+      where: { userId, isActive: true },
+    });
 
-    sendSuccess(res, 200, undefined, "UPLOAD_SUCCESS");
+    if (subscription) {
+      await Subscription.increment(
+        { currentStorageBytes: 4096 },
+        { where: { userId }, transaction: t },
+      );
+    }
 
     await t.commit();
+
+    sendSuccess(res, 200, undefined, "UPLOAD_SUCCESS");
   } catch (error) {
     await t.rollback();
     next(error);

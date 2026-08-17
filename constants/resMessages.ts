@@ -45,5 +45,6 @@ export type SuccessMessage =
   | "EMAIL_SUCCESS"
   | "JOB_SAVED"
   | "JOB_UPDATED"
+  | "JOB_DELETED"
   | "JOBS_FETCHED_AND_SAVED"
   | "ACCOUNT_DELETED";

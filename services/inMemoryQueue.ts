@@ -28,6 +28,7 @@ interface WorkerOptions {
   drainDelay?: number;
   removeOnFail?: { count: number };
   removeOnComplete?: { count: number };
+  timeout?: number;
 }
 
 type Processor = (job: Job) => Promise<any>;
@@ -89,6 +90,7 @@ class InMemoryWorker extends EventEmitter {
   queueName: string;
   private processor: Processor;
   private queue: InMemoryQueue;
+  private options?: WorkerOptions;
   isProcessing = false;
 
   constructor(
@@ -100,6 +102,7 @@ class InMemoryWorker extends EventEmitter {
     super();
     this.queueName = queueName;
     this.processor = processor;
+    this.options = options;
     this.queue = existingQueue || getOrCreateQueue(queueName);
     this.queue.registerWorker(this);
   }
@@ -108,12 +111,26 @@ class InMemoryWorker extends EventEmitter {
     if (this.isProcessing) return;
     this.isProcessing = true;
 
+    const timeoutMs = this.options?.timeout || 5 * 60 * 1000;
+    let timeoutHandle: NodeJS.Timeout | null = null;
+
     try {
       this.emit("active", job);
-      const result = await this.processor(job);
+
+      const result = await Promise.race([
+        this.processor(job),
+        new Promise<never>((_, reject) => {
+          timeoutHandle = setTimeout(() => {
+            reject(new Error(`Job ${job.id} timed out after ${timeoutMs}ms`));
+          }, timeoutMs);
+        }),
+      ]);
+
+      if (timeoutHandle) clearTimeout(timeoutHandle);
       job.returnvalue = result;
       this.emit("completed", job, result);
     } catch (error: any) {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
       job.failedReason = error?.message || String(error);
       this.emit("failed", job, error);
     } finally {

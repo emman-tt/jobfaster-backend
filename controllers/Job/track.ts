@@ -26,6 +26,7 @@ export async function getJobTrack(
       where: {
         userId,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     sendSuccess(res, 200, "success", "JOBS_FETCHED", userJobs);
@@ -106,7 +107,9 @@ export async function updateJobTrack(
     const status = job.status;
     const jobId = job.jobId;
 
-    const existing = await UserJob.findByPk(jobId);
+    const existing = await UserJob.findOne({
+      where: { id: jobId, userId },
+    });
 
     await UserJob.update(
       {
@@ -148,7 +151,7 @@ export async function deleteJobTrack(
       },
     });
 
-    return sendSuccess(res, undefined, undefined, "JOB_UPDATED");
+    return sendSuccess(res, undefined, undefined, "JOB_DELETED");
   } catch (error) {
     next(error);
   }

@@ -8,7 +8,9 @@ const {
   DEVELOPMENT,
 } = process.env;
 
-const FRONTEND_URLS = ["http://localhost:5173", "http://localhost:5174"];
+const FRONTEND_URLS = FRONTEND_URL
+  ? [FRONTEND_URL, "http://localhost:5173", "http://localhost:5174"]
+  : ["http://localhost:5173", "http://localhost:5174"];
 
 export const auth = betterAuth({
   baseURL: BETTER_AUTH_URL,

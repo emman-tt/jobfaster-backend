@@ -640,6 +640,66 @@ export async function handleSubscriptionPaymentSuccess(
   }
 }
 
+export async function handleSubscriptionPaymentFailed(
+  data: any,
+  userId: string,
+) {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const attributes = data.attributes || {};
+    const subscriptionId = attributes.subscription_id || data.id;
+
+    if (!subscriptionId) {
+      await transaction.rollback();
+      return;
+    }
+
+    const subscription = await Subscription.findOne({
+      where: { lemonSqueezyId: String(subscriptionId) },
+      transaction,
+    });
+
+    if (subscription) {
+      await subscription.update(
+        { isActive: false },
+        { transaction },
+      );
+
+      const failedTxnId = `failed-${subscriptionId}-${Date.now()}`;
+      await Transaction.create(
+        {
+          userId,
+          subscriptionId: subscription.id,
+          provider: "lemon_squeezy",
+          providerTransactionId: failedTxnId,
+          amount: 0,
+          currency: "USD",
+          status: "failed",
+          description: "Subscription payment failed",
+        },
+        { transaction },
+      );
+
+      await transaction.commit();
+
+      logInfo("Subscription payment failed — deactivated", {
+        subscriptionId,
+        userId,
+      });
+    } else {
+      await transaction.rollback();
+    }
+  } catch (error) {
+    await transaction.rollback();
+    logError(error instanceof Error ? error : new Error(String(error)), {
+      file: "payment.ts",
+      function: "handleSubscriptionPaymentFailed",
+      line: 0,
+    });
+  }
+}
+
 export async function assignFreePlan(
   userId: string,
   options?: { transaction?: SequelizeTransaction },

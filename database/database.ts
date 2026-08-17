@@ -121,8 +121,6 @@ export async function db() {
 
   try {
     await sequelize.authenticate();
-    console.log("Database connected successfully");
   } catch (error) {
-    console.error("Sync error:", error);
   }
 }

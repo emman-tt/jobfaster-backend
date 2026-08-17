@@ -78,6 +78,12 @@ export async function resetPassword(
   try {
     const { token, password } = req.body;
 
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#\-_.])[A-Za-z\d@$!%*?&#\-_.]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return sendError(res, "INVALID_INPUT", 422, "failed");
+    }
+
     const user = await User.findOne({
       where: {
         resetToken: token,

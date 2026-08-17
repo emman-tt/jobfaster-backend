@@ -1,0 +1,8 @@
+allowBuilds:
+  '@google/genai': true
+  bcrypt: true
+  esbuild: true
+  msgpackr-extract: true
+  protobufjs: true
+  puppeteer: true
+  tesseract.js: true

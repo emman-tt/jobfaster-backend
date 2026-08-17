@@ -50,6 +50,10 @@ export const UserJob = sequelize.define<JobModel>("user_job", {
   fileId: {
     type: DataTypes.UUID,
     allowNull: true,
+    references: {
+      model: "files",
+      key: "id",
+    },
   },
   userId: {
     type: DataTypes.UUID,

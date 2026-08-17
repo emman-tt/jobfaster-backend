@@ -9,11 +9,6 @@ import { body, validationResult } from "express-validator";
 import { sendError } from "../../utils/sendError";
 import { RefreshAuth } from "../../middleware/authenticate";
 import { logout } from "../../controllers/auth/auth";
-import { generateToken } from "../../services/jwt";
-
-import { UAParser } from "ua-parser-js";
-import crypto from "crypto";
-import { sendSuccess } from "../../utils/sendSuccess";
 import "dotenv/config";
 const { DEVELOPMENT } = process.env;
 
@@ -39,7 +34,7 @@ const validateRegister = [
     .withMessage("Password is required")
     .trim()
     .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#\-_.])[A-Za-z\d@$!%*?&#\-_.]{8,}$/,
     )
     .withMessage(
       "Password must contain uppercase, lowercase, number, and special character",
@@ -79,6 +74,13 @@ const validateResetEmail = [
       gmail_remove_dots: false,
       gmail_remove_subaddress: true,
     }),
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ status: "failed", errors: errors.array() });
+    }
+    next();
+  },
 ];
 
 router.post("/register", validateRegister, register);

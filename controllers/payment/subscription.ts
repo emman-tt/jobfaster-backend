@@ -30,6 +30,9 @@ export async function getActiveSubscription(
           ],
         },
       ],
+      attributes: {
+        exclude: ["lemonSqueezyId", "lemonSqueezyOrderId", "updatePaymentMethodUrl"],
+      },
     });
 
     sendSuccess(res, 200, "success", "FETCH_SUCCESS", subscription);

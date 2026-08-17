@@ -1,8 +1,40 @@
 import { NextFunction, Response, Request } from "express";
 import { Job } from "../../models/job";
 import { sendSuccess } from "../../utils/sendSuccess";
+import { sendError } from "../../utils/sendError";
+import { OcrExtract } from "../../services/ocr";
+import {
+  getSubscriptionWithPlan,
+  getPlan,
+  checkFeatureFlag,
+  PlanLimitError,
+} from "../../services/planEnforcer";
 
 const { RAPID_API_KEY } = process.env;
+
+export async function ExtractOcr(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const decoded = req.user as any;
+    const subscription = await getSubscriptionWithPlan(decoded.sub);
+    const plan = getPlan(subscription);
+    checkFeatureFlag(plan, "allowJobImageUploads");
+
+    const imageFile = req.file as any;
+    const buffer = imageFile.buffer;
+    const result = await OcrExtract(buffer);
+    const text = result.data.text;
+    sendSuccess(res, undefined, undefined, "UPLOAD_SUCCESS", text);
+  } catch (error) {
+    if (error instanceof PlanLimitError) {
+      return sendError(res, "FEATURE_NOT_ALLOWED", 403);
+    }
+    next(error);
+  }
+}
 
 export async function getJobs(req: Request, res: Response, next: NextFunction) {
   try {
@@ -27,7 +59,6 @@ export async function getJobs(req: Request, res: Response, next: NextFunction) {
       hasMore: page * limit < total,
     });
   } catch (error) {
-    console.error(error);
     next(error);
   }
 }
@@ -83,6 +114,5 @@ export async function fetchJobs() {
       });
     }
   } catch (error) {
-    console.log(error);
   }
 }

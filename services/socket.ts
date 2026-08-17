@@ -8,7 +8,6 @@ import {
   onMailWorkerReady,
 } from "./worker.js";
 import { WebSocket } from "ws";
-import { uploadResume } from "../controllers/Program/file.js";
 import { Parse } from "./pdfParsee.js";
 import { sendSocketError } from "../utils/sendSocketError.js";
 import { logError } from "../utils/logger.js";
@@ -136,7 +135,6 @@ async function handleJobApply(
     userId: userId,
     fileId: fileId,
   });
-  console.log(`Job ${job.id} added to queue`);
 }
 async function handleJobMail(
   data: any,
@@ -225,13 +223,10 @@ async function handleJobMail(
     validatedData: validatedData,
     userId: userId,
   });
-
-  console.log(`Job ${job.id} added to queue`);
 }
 
 onMailWorkerReady((queue, worker) => {
   worker.on("completed", (job, result) => {
-    console.log(` Job ${job.id} completed`);
     const userId = job.data?.userId as string;
     const message = JSON.stringify(result);
 
@@ -243,7 +238,6 @@ onMailWorkerReady((queue, worker) => {
   });
 
   worker.on("active", (job) => {
-    console.log(` Job ${job.id} started`);
     const message = JSON.stringify({ type: job.name, jobId: job.id });
     const userId = job.data?.userId as string;
 
@@ -275,7 +269,6 @@ onMailWorkerReady((queue, worker) => {
 });
 onAiWorkerReady((queue, worker) => {
   worker.on("completed", (job, result) => {
-    console.log(` Job ${job.id} completed`);
     const message = JSON.stringify(result);
 
     const userId = job.data?.userId as string;
@@ -286,7 +279,6 @@ onAiWorkerReady((queue, worker) => {
   });
 
   worker.on("active", (job) => {
-    console.log(` Job ${job.id} started`);
     const message = JSON.stringify({ type: job.name, jobId: job.id });
 
     const userId = job.data?.userId as string;

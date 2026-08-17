@@ -48,23 +48,30 @@ const authLimiter = rateLimit({
 
 // app.use(generalLimiter);
 
+app.use((req: Request, res: Response, next) => {
+  if (req.path.startsWith("/api/auth") || req.path.startsWith("/api/v1/auth")) {
+    return authLimiter(req, res, next);
+  }
+  next();
+});
+
+app.use(generalLimiter);
+
 app.post(
   "/api/webhooks/lemon-squeezy",
   express.raw({
     type: "application/json",
   }),
   (req: Request, res: Response) => {
-    console.log("[WEBHOOK] Handling Lemon Squeezy webhook...");
     return handlePaymentWebhook(req, res);
   },
 );
 
 app.set("etag", false);
 
-const FRONTEND_URLS = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-];
+const FRONTEND_URLS = process.env.FRONTEND_URL
+  ? [process.env.FRONTEND_URL, "http://localhost:5173", "http://localhost:5174"]
+  : ["http://localhost:5173", "http://localhost:5174"];
 
 app.use(
   cors({

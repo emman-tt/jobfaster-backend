@@ -9,6 +9,7 @@ import {
   handleSubscriptionResumed,
   handleSubscriptionPaymentSuccess,
   handleSubscriptionPlanChanged,
+  handleSubscriptionPaymentFailed,
 } from "./payment";
 import { ProcessedEvent } from "../../models/processed-event";
 import { logError, logInfo } from "../../utils/logger.js";
@@ -18,7 +19,7 @@ const { LEMON_SQUEEZY_WEBHOOK_SECRET } = process.env;
 async function processOrderCreated(data: any, userId: string) {
   const attributes = data.attributes || {};
   const firstSub = attributes.first_subscription;
-  const subscriptionId = firstSub?.id || firstSub?.data?.id;
+  const subscriptionId = firstSub?.id || firstSub?.data?.id || null;
   const orderNumber = attributes.order_number;
   const amount = attributes.total || 0;
   const currency = attributes.currency || "USD";
@@ -192,6 +193,7 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
           userId,
           variantKey,
         });
+        await handleSubscriptionPaymentFailed(webhook.data, userId);
         break;
       case "order_created":
         logInfo("Webhook received", {
@@ -218,6 +220,6 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
     });
     res
       .status(500)
-      .json({ error: "Internal server error", message: String(error) });
+      .json({ error: "Internal server error" });
   }
 }

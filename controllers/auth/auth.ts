@@ -124,7 +124,7 @@ export async function register(
     });
 
     if (userExists) {
-      return sendError(res, "USER_EXISTS", 401, "failed");
+      return sendError(res, "USER_EXISTS", 409, "failed");
     }
 
     const hashedPassword = await hashPassword(password);
@@ -305,7 +305,6 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
 
     return sendSuccess(res, undefined, "success", "LOGOUT_SUCCESS");
   } catch (error) {
-    console.error("Logout error:", error);
     next(error);
   }
 }

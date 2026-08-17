@@ -2,14 +2,14 @@ import { Response } from "express";
 import { SuccessMessage } from "../constants/resMessages";
 export function sendSuccess<T>(
   res: Response,
-  statusCode: number = 200,
-  status: "success" = "success",
-  message: SuccessMessage,
+  statusCode?: number,
+  status?: "success",
+  message?: SuccessMessage,
   data?: T,
 ) {
-  res.status(statusCode).json({
-    status: status,
-    message: message,
+  res.status(statusCode ?? 200).json({
+    status: status ?? "success",
+    message: message ?? "FETCH_SUCCESS",
     data: data ?? null,
     timestamp: new Date().toISOString(),
   });

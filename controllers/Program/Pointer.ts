@@ -80,7 +80,6 @@ export async function deleteProgram(
 
     sendSuccess(res, 200, "success", "DELETE_SUCCESS");
   } catch (error) {
-    console.log(error);
     await t.rollback();
     next(error);
   }
@@ -149,9 +148,12 @@ export async function renameProgram(
   next: NextFunction,
 ) {
   try {
+    const decoded = req.user;
+    const userId = decoded?.sub;
     const programId = req.params.id as string;
     const newName = req.body.name as string;
-    const program = await Pointer.findByPk(programId, {
+    const program = await Pointer.findOne({
+      where: { id: programId, userId },
       include: [
         { model: File, as: "file" },
         { model: Folder, as: "folder" },
@@ -201,24 +203,27 @@ export async function MoveFile(
     const decoded = req.user;
     const userId = decoded?.sub;
 
-    const fileExist = await File.findOne({
-      where: {
-        id: fileId,
-      },
+    const filePointer = await Pointer.findOne({
+      where: { id: fileId, userId },
+      include: [{ model: File, as: "file" }],
     });
 
-    if (!fileExist) {
+    if (!filePointer || !filePointer.file) {
       return sendError(res, "NO_FILE", 404, "failed");
     }
-    const folderExist = await Folder.findByPk(folderId);
 
-    if (!folderExist) {
+    const folderPointer = await Pointer.findOne({
+      where: { id: folderId, userId, type: "FOLDER" },
+    });
+
+    if (!folderPointer) {
       return sendError(res, "NO_FOLDER", 404, "failed");
     }
 
-    await fileExist.update({
-      folderId: folderExist.dataValues.id,
-    });
+    await File.update(
+      { folderId: folderPointer.id },
+      { where: { id: filePointer.id } },
+    );
 
     sendSuccess(res, undefined, "success", "UPDATE SUCCESS");
   } catch (error) {

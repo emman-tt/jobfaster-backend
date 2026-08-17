@@ -27,7 +27,7 @@ export const Activity = sequelize.define<ActivityModel>("activity", {
     allowNull: false,
   },
   userId: {
-    type: DataTypes.STRING,
+    type: DataTypes.UUID,
     allowNull: false,
   },
   type: {

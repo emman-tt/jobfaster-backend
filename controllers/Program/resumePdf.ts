@@ -3,8 +3,6 @@ import { generatePDFFromHTML } from "../../services/pdf-generator";
 import { sendSuccess } from "../../utils/sendSuccess";
 import { sendError } from "../../utils/sendError";
 import { Pointer } from "../../models/pointer";
-import { Subscription } from "../../models/subscription";
-import { Plan } from "../../models/plans";
 import { File } from "../../models/file";
 import { Activity } from "../../models/activity";
 import { sequelize } from "../../database/pool";
@@ -87,7 +85,6 @@ export async function saveResumePDF(
     if (subscription) {
       await subscription.increment(
         {
-          resumeUploadsThisMonth: 1,
           currentStorageBytes: result.size,
         },
         { transaction: t },
