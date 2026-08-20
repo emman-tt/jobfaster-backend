@@ -22,6 +22,15 @@ interface FileModel extends Model<
     size: number;
     content: string;
     downloadUrl: string;
+    editorMeta?: {
+      templateId: string;
+      font: string;
+      weight: number;
+      size: number;
+      height: number;
+      theme: string;
+      contrast: number;
+    };
   };
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;

@@ -662,7 +662,7 @@ export async function handleSubscriptionPaymentFailed(
 
     if (subscription) {
       await subscription.update(
-        { isActive: false },
+        { isActive: false, status: "payment_failed" },
         { transaction },
       );
 

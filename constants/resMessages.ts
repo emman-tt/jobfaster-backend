@@ -25,6 +25,7 @@ export type ErrorMessage =
   | "APPLICATION_LIMIT_EXCEEDED"
   | "STORAGE_LIMIT_EXCEEDED"
   | "FEATURE_NOT_ALLOWED"
+  | "SUBSCRIPTION_REQUIRED"
   | "UPDATE_FAILED";
 
 export type SuccessMessage =

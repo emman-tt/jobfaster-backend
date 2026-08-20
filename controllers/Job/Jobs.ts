@@ -113,6 +113,5 @@ export async function fetchJobs() {
         jobHighlights: job.job_highlights || {},
       });
     }
-  } catch (error) {
-  }
+  } catch (error) {}
 }

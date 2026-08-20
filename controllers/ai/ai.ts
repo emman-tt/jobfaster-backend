@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 import { applyJobPromptUpload } from "../../prompts/jobPrompt";
 
 import Groq from "groq-sdk";
@@ -6,7 +5,6 @@ import Groq from "groq-sdk";
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
-const ai = new GoogleGenAI({});
 
 interface Response {
   response: string;
@@ -17,7 +15,7 @@ interface Response {
 async function callAi(prompt: string): Promise<Response> {
   try {
     const response = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "openai/gpt-oss-120b",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
       max_tokens: 4000,
@@ -33,7 +31,7 @@ async function callAi(prompt: string): Promise<Response> {
     return {
       statusCode: 500,
       response: "",
-      message: error.message,
+      message: (error as Error)?.message || "AI request failed",
     };
   }
 }

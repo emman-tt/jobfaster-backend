@@ -24,7 +24,7 @@ export async function saveResumePDF(
   const t = await sequelize.transaction();
 
   try {
-    const { html, name } = req.body;
+    const { html, name, parsedContent, editorMeta } = req.body;
     const decoded = req?.user;
     const userId = decoded?.sub as string;
 
@@ -69,7 +69,8 @@ export async function saveResumePDF(
     await File.create(
       {
         id,
-        source: "upload",
+        source: "builder",
+        parsedContent: parsedContent || null,
         metaData: {
           name,
           layoutId: null,
@@ -77,6 +78,7 @@ export async function saveResumePDF(
           size: result.size,
           content: result.url,
           downloadUrl: result.downloadUrl,
+          ...(editorMeta ? { editorMeta } : {}),
         },
       },
       { transaction: t },
@@ -114,7 +116,7 @@ export async function updateResumePDF(
   next: NextFunction,
 ) {
   try {
-    const { html, name } = req.body;
+    const { html, name, parsedContent, editorMeta } = req.body;
     const fileId = req.params.id as string;
     const decoded = req?.user;
     const userId = decoded?.sub as string;
@@ -134,15 +136,22 @@ export async function updateResumePDF(
 
     const result = await generatePDFFromHTML(html, name);
 
-    await pointer.file.update({
+    const updatePayload: any = {
       metaData: {
         ...pointer.file.metaData,
         name,
         size: result.size,
         content: result.url,
         downloadUrl: result.downloadUrl,
+        ...(editorMeta ? { editorMeta } : {}),
       },
-    });
+    };
+
+    if (parsedContent) {
+      updatePayload.parsedContent = parsedContent;
+    }
+
+    await pointer.file.update(updatePayload);
 
     // await Activity.create({
     //   userId,

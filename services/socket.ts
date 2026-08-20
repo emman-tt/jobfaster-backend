@@ -20,6 +20,7 @@ import {
   checkApplicationLimit,
   PlanLimitError,
 } from "./planEnforcer.js";
+import { requireSocketSubscription } from "./subscriptionCheck.js";
 socket.on("connection", async (ws: WebSocket, req: Request) => {
   const userId = authenticateSocket(req, ws);
 
@@ -95,6 +96,9 @@ async function handleJobApply(
   if (!resume || !downloadUrl || !jobDescription || !hiringEmail || !fileId) {
     return sendSocketError(ws, "VALIDATION_ERROR", "FIELDS_ARE_MISSING", type);
   }
+
+  const subscribed = await requireSocketSubscription(userId, ws, type);
+  if (!subscribed) return;
 
   const allowed = await enforceApplicationLimit(userId, ws, type);
   if (!allowed) return;
@@ -180,6 +184,9 @@ async function handleJobMail(
       "JOB_MAIL",
     );
   }
+
+  const subscribed = await requireSocketSubscription(userId, ws, type);
+  if (!subscribed) return;
 
   const validatedData = {
     to,
